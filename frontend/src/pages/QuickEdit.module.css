@@ -61,11 +61,11 @@
   flex-wrap: wrap;
   gap: 10px;
   padding: 12px 14px;
-  background: #f0fdf4;
-  border: 1.5px solid #86efac;
+  background: #eff6ff;
+  border: 1.5px solid #93c5fd;
   border-radius: 8px;
   font-size: 13px;
-  color: #166534;
+  color: #1a3a5c;
 }
 
 .alreadyCollected {
@@ -106,8 +106,8 @@
 .aiBtn:not(:disabled):hover { opacity: 0.85; }
 
 .aiBox {
-  background: #f0fdf4;
-  border: 1.5px solid #86efac;
+  background: #eff6ff;
+  border: 1.5px solid #93c5fd;
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -119,13 +119,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #15803d;
+  color: #1a3a5c;
   font-size: 13px;
 }
 
 .aiSummary {
   font-size: 13px;
-  color: #166534;
+  color: #1e40af;
   direction: rtl;
   text-align: right;
 }
@@ -141,16 +141,16 @@
   align-self: flex-start;
   padding: 6px 14px;
   border-radius: 6px;
-  border: 1.5px solid #16a34a;
+  border: 1.5px solid #2e7fbf;
   background: transparent;
-  color: #16a34a;
+  color: #2e7fbf;
   font-size: 13px;
   font-weight: 600;
   transition: background 0.15s, color 0.15s;
 }
 
 .applyBtn:hover {
-  background: #16a34a;
+  background: #2e7fbf;
   color: #fff;
 }
 
@@ -195,8 +195,8 @@
 }
 
 .success {
-  background: #d1fae5;
-  color: #065f46;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .error {

@@ -117,17 +117,17 @@
 }
 
 .table tbody tr:hover {
-  background: #f0fdf4;
+  background: #eff6ff;
 }
 
 .collected td {
-  background: #f0fdf4;
+  background: #eff6ff;
 }
 
 .table tbody tr:nth-child(even) {
-  background: #fafafa;
+  background: #f8fafc;
 }
 
 .table tbody tr.collected:nth-child(even) {
-  background: #dcfce7;
+  background: #dbeafe;
 }
