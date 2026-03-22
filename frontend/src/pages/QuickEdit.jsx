@@ -126,6 +126,13 @@ function CollectMode() {
           classNamePrefix="rs"
         />
 
+        {donorGuitars.length > 0 && donorGuitars.every(g => g.collected) && (
+          <div className={styles.alert} style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #f59e0b' }}>
+            <AlertCircle size={17} />
+            <span>שים לב: כל הגיטרות של תורם זה כבר סומנו כנאספות. ייתכן שמדובר בטעות בשם או בסימון קודם.</span>
+          </div>
+        )}
+
         {donorGuitars.length > 1 && (
           <>
             <label className={styles.label}>בחר גיטרה (לתורם יש {donorGuitars.length} רשומות)</label>
@@ -145,12 +152,18 @@ function CollectMode() {
           </>
         )}
 
+        {currentGuitar && currentGuitar.collected && (
+          <div className={styles.alert} style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #f59e0b' }}>
+            <AlertCircle size={17} />
+            <span>גיטרה זו כבר סומנה כנאספה בעבר. האם בטוח שזה נכון?</span>
+          </div>
+        )}
+
         {currentGuitar && (
           <div className={styles.guitarInfo}>
             <span>🎸 {currentGuitar.guitarType || 'סוג לא ידוע'}</span>
             <span>📍 {currentGuitar.city}{currentGuitar.street ? `, ${currentGuitar.street}` : ''}</span>
             <span>📞 {currentGuitar.phone}</span>
-            {currentGuitar.collected && <span className={styles.alreadyCollected}>⚠️ כבר נאספה</span>}
           </div>
         )}
 
