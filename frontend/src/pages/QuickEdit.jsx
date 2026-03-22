@@ -4,7 +4,6 @@ import {
   getGuitarsByName,
   updateGuitar,
   uploadImage,
-  parseNotes,
   searchDonors,
   parseGeneralUpdate,
 } from '../api/client';
@@ -12,26 +11,6 @@ import { Sparkles, Upload, CheckCircle, AlertCircle, X } from 'lucide-react';
 import styles from './QuickEdit.module.css';
 
 const GUITAR_TYPES = ['קלאסית', 'אקוסטית', 'חשמלית'];
-
-// ─── AI Suggestion sub-component (used in CollectMode) ────────────────────────
-
-function AiSuggestion({ suggestion, onApply }) {
-  if (!suggestion) return null;
-  return (
-    <div className={styles.aiBox}>
-      <div className={styles.aiHeader}>
-        <Sparkles size={15} />
-        <strong>הצעת AI</strong>
-      </div>
-      <p className={styles.aiSummary}>{suggestion.summary}</p>
-      <div className={styles.aiFields}>
-        <span>סוג: <strong>{suggestion.guitarType}</strong></span>
-        <span>תקינות: <strong>{suggestion.condition}</strong></span>
-      </div>
-      <button className={styles.applyBtn} onClick={onApply}>החל הצעה</button>
-    </div>
-  );
-}
 
 // ─── CollectMode ──────────────────────────────────────────────────────────────
 
@@ -45,9 +24,6 @@ function CollectMode() {
   const [working, setWorking]       = useState('');
   const [imageFile, setImageFile]   = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-
-  const [aiSuggestion, setAiSuggestion] = useState(null);
-  const [aiLoading, setAiLoading]       = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult]         = useState(null);
@@ -64,7 +40,7 @@ function CollectMode() {
 
   function prefill(guitar) {
     setSelectedRowIndex(guitar.rowIndex);
-    setNotes(guitar.notes || '');
+    setNotes('');
     setGuitarType(guitar.guitarType || '');
     setWorking(guitar.working || '');
     setImagePreview('');
@@ -90,27 +66,6 @@ function CollectMode() {
     if (!file) return;
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
-  };
-
-  const handleAiParse = async () => {
-    if (!notes.trim()) return;
-    setAiLoading(true);
-    setAiSuggestion(null);
-    try {
-      const res = await parseNotes(notes);
-      setAiSuggestion(res);
-    } catch (err) {
-      alert('שגיאת AI: ' + err.message);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const applyAiSuggestion = () => {
-    if (!aiSuggestion) return;
-    const typeMap = { Acoustic: 'אקוסטית', Classic: 'קלאסית', Electric: 'חשמלית' };
-    if (aiSuggestion.guitarType !== 'Unknown') setGuitarType(typeMap[aiSuggestion.guitarType] || '');
-    if (aiSuggestion.condition  !== 'Unknown') setWorking(aiSuggestion.condition);
   };
 
   const handleSubmit = async (e) => {
@@ -143,7 +98,6 @@ function CollectMode() {
       setNotes('');
       setGuitarType(''); setWorking('');
       setImageFile(null); setImagePreview('');
-      setAiSuggestion(null);
     } catch (err) {
       setResult('error');
       setResultMsg(err.message);
@@ -220,27 +174,13 @@ function CollectMode() {
         </div>
 
         <label className={styles.label}>הערות</label>
-        <div className={styles.notesWrapper}>
-          <textarea
-            className={styles.textarea}
-            rows={4}
-            placeholder="תארו את מצב הגיטרה, נזקים, מאפיינים מיוחדים..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-          />
-          <button
-            type="button"
-            className={styles.aiBtn}
-            onClick={handleAiParse}
-            disabled={!notes.trim() || aiLoading}
-            title="נתח את ההערות עם AI"
-          >
-            <Sparkles size={14} />
-            {aiLoading ? 'מנתח...' : 'AI'}
-          </button>
-        </div>
-
-        <AiSuggestion suggestion={aiSuggestion} onApply={applyAiSuggestion} />
+        <textarea
+          className={styles.textarea}
+          rows={4}
+          placeholder="תארו את מצב הגיטרה, נזקים, מאפיינים מיוחדים..."
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+        />
 
         <label className={styles.label}>תמונת הגיטרה</label>
         <label className={styles.uploadArea}>

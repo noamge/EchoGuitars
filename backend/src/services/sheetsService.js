@@ -277,7 +277,10 @@ async function updateGuitarByRowIndex(stableId, updates) {
   while (row.length < 22) row.push(''); // pad to 22 columns (A–V)
 
   if (updates.collected   !== undefined) row[COL.COLLECTED]  = updates.collected ? 'TRUE' : 'FALSE';
-  if (updates.notes       !== undefined) row[COL.NOTES]      = updates.notes;
+  if (updates.notes       !== undefined && updates.notes.trim()) {
+    const existing = row[COL.NOTES] ? row[COL.NOTES].trim() : '';
+    row[COL.NOTES] = existing ? existing + '\n' + updates.notes.trim() : updates.notes.trim();
+  }
   if (updates.whoRepairs  !== undefined) row[COL.WHO_REPAIRS] = updates.whoRepairs;
   if (updates.repaired    !== undefined) row[COL.REPAIRED]   = updates.repaired ? 'TRUE' : 'FALSE';
   if (updates.donatedTo   !== undefined) row[COL.DONATED_TO] = updates.donatedTo;
