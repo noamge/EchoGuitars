@@ -264,9 +264,13 @@ async function findRowByStableId(stableId) {
 async function updateGuitarByRowIndex(stableId, updates) {
   const sheets = getSheetsClient();
 
-  // Locate the physical row using the stable ID stored in column U
-  const rowIndex = await findRowByStableId(stableId);
-  if (!rowIndex) throw new Error(`Guitar with ID ${stableId} not found`);
+  // Try to locate by stable ID in column U; fall back to treating stableId as a direct row index
+  let rowIndex = await findRowByStableId(stableId);
+  if (!rowIndex) {
+    const numId = Number(stableId);
+    if (numId >= 2) rowIndex = numId;
+    else throw new Error(`Guitar with ID ${stableId} not found`);
+  }
 
   // Fetch current row
   const res = await sheets.spreadsheets.values.get({
