@@ -4,48 +4,60 @@ import { getGuitars } from '../api/client';
 import styles from './TableView.module.css';
 
 const COLUMNS = [
-  { key: 'id',         label: '#' },
-  { key: 'name',       label: 'שם' },
-  { key: 'city',       label: 'עיר' },
-  { key: 'street',     label: 'רחוב' },
-  { key: 'phone',      label: 'טלפון' },
-  { key: 'guitarType', label: 'סוג גיטרה' },
-  { key: 'working',    label: 'תקינות' },
-  { key: 'hasCase',    label: 'קייס' },
-  { key: 'defect',     label: 'פירוט תקלה' },
-  { key: 'collected',  label: 'נאסף', render: v => v ? '✓' : '—' },
-  { key: 'whoRepairs', label: 'מי מתקן' },
-  { key: 'repaired',   label: 'תוקן', render: v => v ? '✓' : '—' },
-  { key: 'donatedTo',  label: 'נתרם ל' },
-  { key: 'notes',      label: 'הערות' },
-  { key: 'region',     label: 'אזור' },
-  { key: 'imageUrl',   label: 'תמונה', render: v => v
-      ? <a href={v} target="_blank" rel="noopener noreferrer" style={{color:'#2563eb'}}>📷 צפה</a>
+  { key: 'id',         label: '#',          width: 44 },
+  { key: 'name',       label: 'שם',         width: 130 },
+  { key: 'city',       label: 'עיר',        width: 90 },
+  { key: 'street',     label: 'רחוב',       width: 110 },
+  { key: 'phone',      label: 'טלפון',      width: 110 },
+  { key: 'guitarType', label: 'סוג',        width: 80 },
+  { key: 'working',    label: 'תקינות',     width: 80 },
+  { key: 'hasCase',    label: 'קייס',       width: 55 },
+  { key: 'collected',  label: 'נאסף',       width: 55,  render: v => v ? '✓' : '—' },
+  { key: 'donatedTo',  label: 'נתרם ל',     width: 110 },
+  { key: 'notes',      label: 'הערות',      width: 140 },
+  { key: 'region',     label: 'אזור',       width: 70 },
+  { key: 'imageUrl',   label: 'תמונה',      width: 65,  render: v => v
+      ? <a href={v} target="_blank" rel="noopener noreferrer" style={{color:'#2563eb'}}>📷</a>
       : '—'
   },
 ];
 
+function sortValue(g, key) {
+  const v = g[key];
+  if (typeof v === 'boolean') return v ? 0 : 1;
+  if (typeof v === 'number') return v;
+  return (v ?? '').toString().toLowerCase();
+}
+
 export default function TableView() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [guitars, setGuitars]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState('');
+  const [guitars, setGuitars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState('');
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
 
   useEffect(() => {
-    getGuitars()
-      .then(setGuitars)
-      .finally(() => setLoading(false));
+    getGuitars().then(setGuitars).finally(() => setLoading(false));
   }, []);
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   const filtered = useMemo(() => {
     let rows = guitars;
-    if (filterField && filterValue !== null && filterValue !== undefined) {
+    if (filterField && filterValue != null) {
       rows = rows.filter(g => {
         const gVal = g[filterField];
-        // Handle boolean fields
         if (typeof gVal === 'boolean') return gVal === (filterValue === 'true');
         return String(gVal) === filterValue;
       });
@@ -56,8 +68,17 @@ export default function TableView() {
         COLUMNS.some(col => String(g[col.key] ?? '').toLowerCase().includes(q))
       );
     }
+    if (sortKey) {
+      rows = [...rows].sort((a, b) => {
+        const av = sortValue(a, sortKey);
+        const bv = sortValue(b, sortKey);
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
     return rows;
-  }, [guitars, filterField, filterValue, search]);
+  }, [guitars, filterField, filterValue, search, sortKey, sortDir]);
 
   const clearFilter = () => setSearchParams({});
 
@@ -90,7 +111,18 @@ export default function TableView() {
             <thead>
               <tr>
                 {COLUMNS.map(col => (
-                  <th key={col.key}>{col.label}</th>
+                  <th
+                    key={col.key}
+                    style={{ width: col.width, minWidth: col.width }}
+                    onClick={() => handleSort(col.key)}
+                    className={styles.sortableTh}
+                    title={`מיין לפי ${col.label}`}
+                  >
+                    {col.label}
+                    {sortKey === col.key
+                      ? (sortDir === 'asc' ? ' ▲' : ' ▼')
+                      : ' ⇅'}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -98,7 +130,7 @@ export default function TableView() {
               {filtered.map(g => (
                 <tr key={g.id} className={g.collected ? styles.collected : ''}>
                   {COLUMNS.map(col => (
-                    <td key={col.key}>
+                    <td key={col.key} style={{ maxWidth: col.width }}>
                       {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
                     </td>
                   ))}

@@ -99,21 +99,28 @@
   top: 0;
   background: var(--primary-dark);
   color: #fff;
-  padding: 10px 14px;
+  padding: 10px 10px;
   text-align: right;
   font-weight: 600;
   z-index: 1;
   direction: rtl;
+  white-space: nowrap;
 }
 
+.sortableTh {
+  cursor: pointer;
+  user-select: none;
+}
+.sortableTh:hover { background: #2e7fbf; }
+
 .table td {
-  padding: 8px 14px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   direction: rtl;
   text-align: right;
+  white-space: nowrap;
 }
 
 .table tbody tr:hover {

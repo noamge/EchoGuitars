@@ -1,6 +1,9 @@
 .page {
   padding: 32px;
   max-width: 680px;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: center;
 }
 
 .header {
