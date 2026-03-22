@@ -1,0 +1,133 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  direction: rtl;
+}
+
+.header {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 10px;
+  direction: rtl;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  direction: rtl;
+}
+
+.search {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  width: 260px;
+}
+
+@media (max-width: 600px) {
+  .header { padding: 14px 16px 10px; }
+  .search { width: 100%; }
+  .controls { flex-direction: column; align-items: flex-start; }
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--primary-light);
+}
+
+.activeFilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.activeFilter button {
+  background: none;
+  border: none;
+  color: #1e40af;
+  font-size: 14px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.count {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-muted);
+}
+
+.tableWrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--primary-dark);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: right;
+  font-weight: 600;
+  z-index: 1;
+  direction: rtl;
+}
+
+.table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: right;
+}
+
+.table tbody tr:hover {
+  background: #f0fdf4;
+}
+
+.collected td {
+  background: #f0fdf4;
+}
+
+.table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.table tbody tr.collected:nth-child(even) {
+  background: #dcfce7;
+}
