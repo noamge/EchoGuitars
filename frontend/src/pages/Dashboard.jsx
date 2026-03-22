@@ -10,15 +10,23 @@ import GuitarListModal from '../components/GuitarListModal';
 import styles from './Dashboard.module.css';
 
 const REGION_COLORS = {
-  'צפון': '#7a5c30', 'שרון': '#b08d57', 'מרכז': '#c9a97a',
-  'ירושלים': '#d4b896', 'דרום': '#d4875a', 'שפלה': '#e8c99a', 'אחר': '#adb5bd',
+  'צפון': '#1a9641', 'שרון': '#52b788', 'מרכז': '#a6d96a',
+  'ירושלים': '#ffffbf', 'דרום': '#fdae61', 'שפלה': '#d7191c', 'אחר': '#adb5bd',
 };
 
 const TYPE_COLORS = {
-  'קלאסית': '#7a5c30', 'אקוסטית': '#d4875a', 'חשמלית': '#6b7fb8',
+  'קלאסית': '#1a9641', 'אקוסטית': '#fdae61', 'חשמלית': '#2e7fbf',
 };
 
-const PALETTE = ['#7a5c30','#b08d57','#c9a97a','#d4b896','#d4875a','#c97060','#6b7fb8','#adb5bd'];
+// ירוק → צהוב → כתום → אדום (לפי כמות - יוקצה דינמית)
+const HEAT_PALETTE = ['#1a9641','#52b788','#a6d96a','#d9ef8b','#fee08b','#fdae61','#f46d43','#d7191c'];
+
+function heatColors(data) {
+  const sorted = [...data].sort((a, b) => b.value - a.value);
+  const rank = {};
+  sorted.forEach((d, i) => { rank[d.name] = i; });
+  return data.map(d => HEAT_PALETTE[Math.min(rank[d.name], HEAT_PALETTE.length - 1)]);
+}
 
 function StatCard({ label, value, color, sub, onClick, style }) {
   return (
@@ -126,13 +134,17 @@ export default function Dashboard() {
             <BarChart
               data={[...stats.byCity].sort((a,b) => b.value - a.value).slice(0,10)}
               layout="vertical"
-              margin={{ top: 5, right: 16, left: 70, bottom: 5 }}
+              margin={{ top: 5, right: 8, left: 60, bottom: 5 }}
               style={{ cursor: 'pointer' }}
             >
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={58} />
               <Tooltip />
-              <Bar dataKey="value" name="גיטרות" fill="#40916c" radius={[0,4,4,0]} onClick={(data) => setModal({ title: `גיטרות ב${data.name}`, guitars: allGuitars.filter(g => g.city === data.name) })} />
+              <Bar dataKey="value" name="גיטרות" radius={[0,4,4,0]} onClick={(data) => setModal({ title: `גיטרות ב${data.name}`, guitars: allGuitars.filter(g => g.city === data.name) })}>
+                {heatColors([...stats.byCity].sort((a,b) => b.value - a.value).slice(0,10)).map((color, i) => (
+                  <Cell key={i} fill={color} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -144,15 +156,15 @@ export default function Dashboard() {
             <BarChart
               data={[...stats.byDonatedTo].sort((a,b) => b.value - a.value).slice(0,8)}
               layout="vertical"
-              margin={{ top: 5, right: 16, left: 110, bottom: 5 }}
+              margin={{ top: 5, right: 8, left: 90, bottom: 5 }}
               style={{ cursor: 'pointer' }}
             >
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={105} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={88} />
               <Tooltip />
               <Bar dataKey="value" name="גיטרות" radius={[0,4,4,0]} onClick={(data) => setModal({ title: `נתרמו ל${data.name}`, guitars: allGuitars.filter(g => g.donatedTo === data.name) })}>
-                {stats.byDonatedTo.map((_, i) => (
-                  <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                {heatColors([...stats.byDonatedTo].sort((a,b) => b.value - a.value).slice(0,8)).map((color, i) => (
+                  <Cell key={i} fill={color} />
                 ))}
               </Bar>
             </BarChart>
@@ -180,8 +192,8 @@ export default function Dashboard() {
                 }) })}
                 style={{ cursor: 'pointer' }}
               >
-                {stats.byWorking.map((_, i) => (
-                  <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                {heatColors(stats.byWorking).map((color, i) => (
+                  <Cell key={i} fill={color} />
                 ))}
               </Pie>
               <Tooltip />

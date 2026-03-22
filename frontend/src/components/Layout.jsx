@@ -59,7 +59,7 @@ export default function Layout() {
               >
                 <Icon size={20} />
                 <span>{label}</span>
-                {badge > 0 && <span className={styles.badge}>{badge}</span>}
+                {badgeKey && <span className={styles.badge} style={badge === 0 ? { background: '#6b7280' } : {}}>{badge}</span>}
               </NavLink>
             );
           })}

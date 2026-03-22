@@ -7,13 +7,13 @@
 }
 
 @media (max-width: 600px) {
-  .page { padding: 16px; }
+  .page { padding: 12px; }
   .header h1 { font-size: 22px; }
   .statsRow { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .statCard { padding: 14px 16px; }
   .statValue { font-size: 28px; }
   .chartsGrid { grid-template-columns: 1fr; gap: 14px; }
-  .chartCard { padding: 16px; }
+  .chartCard { padding: 12px 8px; overflow: hidden; }
 }
 
 .center {
@@ -32,7 +32,7 @@
 .header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: #1a3a5c;
 }
 
 .header p {
@@ -58,7 +58,7 @@
 .statValue {
   font-size: 36px;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: #1a3a5c;
   line-height: 1;
 }
 
@@ -84,6 +84,6 @@
 .chartCard h2 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--primary-dark);
+  color: #1a3a5c;
   margin-bottom: 16px;
 }
