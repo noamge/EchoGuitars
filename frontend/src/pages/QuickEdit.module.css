@@ -3,7 +3,7 @@
   max-width: 680px;
   width: 100%;
   box-sizing: border-box;
-  align-self: center;
+  margin: 0 auto;
 }
 
 .header {

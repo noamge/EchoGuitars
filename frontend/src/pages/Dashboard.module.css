@@ -4,7 +4,7 @@
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
-  align-self: center;
+  margin: 0 auto;
 }
 
 @media (max-width: 600px) {
