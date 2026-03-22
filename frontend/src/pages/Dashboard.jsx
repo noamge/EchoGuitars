@@ -10,15 +10,15 @@ import GuitarListModal from '../components/GuitarListModal';
 import styles from './Dashboard.module.css';
 
 const REGION_COLORS = {
-  'צפון': '#2d6a4f', 'שרון': '#40916c', 'מרכז': '#52b788',
-  'ירושלים': '#74c69d', 'דרום': '#95d5b2', 'שפלה': '#b7e4c7', 'אחר': '#adb5bd',
+  'צפון': '#7a5c30', 'שרון': '#b08d57', 'מרכז': '#c9a97a',
+  'ירושלים': '#d4b896', 'דרום': '#d4875a', 'שפלה': '#e8c99a', 'אחר': '#adb5bd',
 };
 
 const TYPE_COLORS = {
-  'קלאסית': '#2d6a4f', 'אקוסטית': '#f4a261', 'חשמלית': '#4361ee',
+  'קלאסית': '#7a5c30', 'אקוסטית': '#d4875a', 'חשמלית': '#6b7fb8',
 };
 
-const PALETTE = ['#2d6a4f','#40916c','#52b788','#74c69d','#f4a261','#e76f51','#4361ee','#adb5bd'];
+const PALETTE = ['#7a5c30','#b08d57','#c9a97a','#d4b896','#d4875a','#c97060','#6b7fb8','#adb5bd'];
 
 function StatCard({ label, value, color, sub, onClick, style }) {
   return (
@@ -106,8 +106,6 @@ export default function Dashboard() {
                 nameKey="name"
                 cx="50%" cy="50%"
                 outerRadius={85}
-                label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`}
-                labelLine={false}
                 onClick={(data) => { if (!data?.name) return; setModal({ title: `גיטרות מסוג ${data.name}`, guitars: allGuitars.filter(g => g.guitarType === data.name) }); }}
                 style={{ cursor: 'pointer' }}
               >
@@ -172,8 +170,6 @@ export default function Dashboard() {
                 nameKey="name"
                 cx="50%" cy="50%"
                 outerRadius={85}
-                label={({ name, percent }) => `${(percent*100).toFixed(0)}%`}
-                labelLine={false}
                 onClick={(data) => setModal({ title: `תקינות: ${data.name}`, guitars: allGuitars.filter(g => {
                   const v = (g.working || '').toLowerCase();
                   if (data.name === 'כן (עם הערות)') return v.startsWith('כן');

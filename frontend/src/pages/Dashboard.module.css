@@ -1,6 +1,9 @@
 .page {
   padding: 32px;
   max-width: 1200px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 @media (max-width: 600px) {
