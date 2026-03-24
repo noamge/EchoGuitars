@@ -14,6 +14,14 @@ function toWhatsApp(phone) {
   return `https://wa.me/${p}`;
 }
 
+function WaIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
+    </svg>
+  );
+}
+
 const MARKER_COLOR = { collected: '#2d6a4f', pending: '#f4a261' };
 
 // Haversine distance in km
@@ -219,7 +227,7 @@ export default function MapView() {
                   {g.phone && (
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
-                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}>💬 וואטסאפ</a>
+                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /></a>
                     </div>
                   )}
                   {g.guitarType && <span className={styles.nearbyType}>{g.guitarType}</span>}

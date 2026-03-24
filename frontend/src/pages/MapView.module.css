@@ -13,6 +13,25 @@
   overflow: hidden;
 }
 
+@media (max-width: 700px) {
+  .page {
+    flex-direction: column;
+    height: 100dvh;
+  }
+  .mapSide {
+    flex: 0 0 45%;
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .nearbySide {
+    flex: 1;
+    min-height: 0;
+  }
+  .nearbyList {
+    max-height: none;
+  }
+}
+
 .mapHeader {
   display: flex;
   align-items: center;
@@ -146,8 +165,10 @@
 .nearbyPhone { font-size: 13px; color: var(--primary); font-weight: 500; text-decoration: none; }
 .nearbyPhone:hover { text-decoration: underline; }
 .waBtn {
-  font-size: 12px; color: #fff; font-weight: 600; text-decoration: none;
-  background: #25d366; padding: 2px 8px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; text-decoration: none;
+  background: #25d366; padding: 3px; border-radius: 50%;
+  width: 22px; height: 22px; flex-shrink: 0;
 }
 .waBtn:hover { background: #1ebe5d; }
 .nearbyType {
