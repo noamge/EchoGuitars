@@ -192,25 +192,6 @@ function CollectMode() {
           </div>
         )}
 
-        <div className={styles.row}>
-          <div className={styles.field}>
-            <label className={styles.label}>סוג גיטרה</label>
-            <select className={styles.select} value={guitarType} onChange={e => setGuitarType(e.target.value)}>
-              <option value="">— בחר —</option>
-              {GUITAR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label}>תקינות</label>
-            <input
-              className={styles.input}
-              placeholder="למשל: כן / לא / חצי"
-              value={working}
-              onChange={e => setWorking(e.target.value)}
-            />
-          </div>
-        </div>
-
         <label className={styles.label}>הערות</label>
         <textarea
           className={styles.textarea}
