@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap } from '../api/client';
 import { MapPin, Navigation, Search } from 'lucide-react';
@@ -43,6 +43,7 @@ export default function MapView() {
   const [resolvedAddress, setResolvedAddress] = useState('');
   const [manualInput, setManualInput]   = useState('');
   const [locating, setLocating]         = useState(false);
+  const [nearbyExpanded, setNearbyExpanded] = useState(false);
   const [nearby, setNearby]             = useState([]);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function MapView() {
   return (
     <div className={styles.page}>
       {/* ── Left: Map ── */}
-      <div className={styles.mapSide}>
+      <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''}`}>
         <div className={styles.mapHeader}>
           <h1>מפת גיטרות</h1>
           <div className={styles.filters}>
@@ -181,10 +182,13 @@ export default function MapView() {
       </div>
 
       {/* ── Right: Nearby Picker ── */}
-      <div className={styles.nearbySide}>
+      <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
           <h2>המלצות לאיסוף בקרבתי</h2>
+          <button className={styles.expandBtn} onClick={() => setNearbyExpanded(e => !e)} title={nearbyExpanded ? 'צמצם' : 'הרחב'}>
+            {nearbyExpanded ? '▼' : '▲'}
+          </button>
         </div>
 
         <div className={styles.locationControls}>
@@ -221,7 +225,7 @@ export default function MapView() {
 
         {nearby.length > 0 && (
           <div className={styles.nearbyList}>
-            <p className={styles.nearbySubtitle}>Top {nearby.length} גיטרות לא נאספות בקרבתך</p>
+            <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
             {nearby.map((g, i) => (
               <div key={g.id} className={styles.nearbyCard}>
                 <div className={styles.nearbyRank}>#{i + 1}</div>

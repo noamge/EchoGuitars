@@ -22,14 +22,37 @@
     flex: 0 0 45%;
     border-left: none;
     border-bottom: 1px solid var(--border);
+    transition: flex 0.3s ease;
+  }
+  .mapSideCollapsed {
+    flex: 0 0 20% !important;
   }
   .nearbySide {
     flex: 1;
     min-height: 0;
+    transition: flex 0.3s ease;
+  }
+  .nearbySideExpanded {
+    flex: 0 0 80% !important;
   }
   .nearbyList {
     max-height: none;
   }
+  .expandBtn {
+    display: flex;
+  }
+}
+
+.expandBtn {
+  display: none;
+  margin-right: auto;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 13px;
+  color: var(--primary-dark);
+  cursor: pointer;
 }
 
 .mapHeader {
@@ -98,7 +121,7 @@
 
 .nearbyHeader {
   display: flex; align-items: center; gap: 8px;
-  padding: 16px 20px 10px;
+  padding: 12px 16px;
   color: var(--primary-dark);
   flex-shrink: 0;
   background: var(--bg-card);
