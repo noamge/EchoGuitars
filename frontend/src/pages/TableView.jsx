@@ -3,12 +3,29 @@ import { useSearchParams } from 'react-router-dom';
 import { getGuitars } from '../api/client';
 import styles from './TableView.module.css';
 
+function toWhatsApp(phone) {
+  if (!phone) return null;
+  let p = phone.replace(/\D/g, '');
+  if (p.startsWith('972')) p = p;
+  else if (p.startsWith('0')) p = '972' + p.slice(1);
+  else if (p.startsWith('5')) p = '972' + p;
+  return `https://wa.me/${p}`;
+}
+
 const COLUMNS = [
   { key: 'id',         label: '#',          width: 44 },
   { key: 'name',       label: 'שם',         width: 130 },
   { key: 'city',       label: 'עיר',        width: 90 },
   { key: 'street',     label: 'רחוב',       width: 110 },
-  { key: 'phone',      label: 'טלפון',      width: 110 },
+  { key: 'phone',      label: 'טלפון',      width: 150, render: v => v ? (
+    <span style={{ display:'flex', gap:6, alignItems:'center' }}>
+      <span>{v}</span>
+      <a href={toWhatsApp(v)} target="_blank" rel="noopener noreferrer"
+        style={{ fontSize:11, background:'#25d366', color:'#fff', padding:'1px 6px', borderRadius:8, textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}>
+        💬 וא'
+      </a>
+    </span>
+  ) : '—' },
   { key: 'guitarType', label: 'סוג',        width: 80 },
   { key: 'working',    label: 'תקינות',     width: 80 },
   { key: 'hasCase',    label: 'קייס',       width: 55 },

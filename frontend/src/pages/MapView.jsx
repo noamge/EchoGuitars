@@ -5,6 +5,15 @@ import { getGuitarsForMap } from '../api/client';
 import { MapPin, Navigation, Search } from 'lucide-react';
 import styles from './MapView.module.css';
 
+function toWhatsApp(phone) {
+  if (!phone) return null;
+  let p = phone.replace(/\D/g, '');
+  if (p.startsWith('972')) p = p;
+  else if (p.startsWith('0')) p = '972' + p.slice(1);
+  else if (p.startsWith('5')) p = '972' + p;
+  return `https://wa.me/${p}`;
+}
+
 const MARKER_COLOR = { collected: '#2d6a4f', pending: '#f4a261' };
 
 // Haversine distance in km
@@ -208,7 +217,10 @@ export default function MapView() {
                     <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
                   </div>
                   {g.phone && (
-                    <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
+                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}>💬 וואטסאפ</a>
+                    </div>
                   )}
                   {g.guitarType && <span className={styles.nearbyType}>{g.guitarType}</span>}
                 </div>
