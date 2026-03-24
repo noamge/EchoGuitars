@@ -19,6 +19,8 @@ function CollectMode() {
   const [donorGuitars, setDonorGuitars] = useState([]);
   const [selectedRowIndex, setSelectedRowIndex] = useState('');
 
+  const [collector, setCollector]   = useState('');
+  const [destination, setDestination] = useState('');
   const [notes, setNotes]           = useState('');
   const [guitarType, setGuitarType] = useState('');
   const [working, setWorking]       = useState('');
@@ -44,6 +46,8 @@ function CollectMode() {
     setGuitarType(guitar.guitarType || '');
     setWorking(guitar.working || '');
     setImagePreview('');
+    setCollector('');
+    setDestination('');
   }
 
   const loadDonorOptions = useCallback(async (inputValue) => {
@@ -83,9 +87,15 @@ function CollectMode() {
           // image upload failed — continue without it
         }
       }
+      const notesParts = [];
+      if (collector.trim())   notesParts.push(`אוסף: ${collector.trim()}`);
+      if (destination.trim()) notesParts.push(`יעד: ${destination.trim()}`);
+      if (notes.trim())       notesParts.push(notes.trim());
+      const fullNotes = notesParts.join('\n');
+
       await updateGuitar(selectedRowIndex, {
         collected: true,
-        notes,
+        notes: fullNotes,
         guitarType,
         working,
         ...(imageUrl && { imageUrl }),
@@ -95,6 +105,7 @@ function CollectMode() {
       setDonorOption(null);
       setDonorGuitars([]);
       setSelectedRowIndex('');
+      setCollector(''); setDestination('');
       setNotes('');
       setGuitarType(''); setWorking('');
       setImageFile(null); setImagePreview('');
@@ -112,6 +123,20 @@ function CollectMode() {
     <>
       <p className={styles.sectionSub}>מלאו את הטופס כדי לסמן גיטרה כנאספה</p>
       <form className={styles.form} onSubmit={handleSubmit}>
+        <label className={styles.label}>שם האוסף</label>
+        <input
+          className={styles.input}
+          placeholder="מי אוסף את הגיטרה?"
+          value={collector}
+          onChange={e => setCollector(e.target.value)}
+        />
+        <label className={styles.label}>לאן לוקחים את הגיטרה?</label>
+        <input
+          className={styles.input}
+          placeholder="כתובת יעד / שם מקום..."
+          value={destination}
+          onChange={e => setDestination(e.target.value)}
+        />
         <label className={styles.label}>שם התורם/ת</label>
         <AsyncSelect
           cacheOptions
