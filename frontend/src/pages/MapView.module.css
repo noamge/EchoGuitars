@@ -69,11 +69,18 @@
 .legendItem { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); }
 .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
 
-.popup { font-size: 12px; min-width: 140px; direction: rtl; }
-.popupSub { color: var(--text-muted); font-size: 11px; margin: 4px 0; }
-.popupRow { display: flex; gap: 8px; }
+.popup { font-size: 12px; min-width: 130px; direction: rtl; text-align: center; }
+.popupSub { color: var(--text-muted); font-size: 11px; margin: 3px 0; }
+.popupMeta { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .collected { color: #166534; font-weight: 600; }
 .pending   { color: #b45309; font-weight: 600; }
+.popupWa {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #25d366; color: #fff; border-radius: 12px;
+  padding: 3px 10px; font-size: 11px; font-weight: 600;
+  text-decoration: none; margin-top: 2px;
+}
+.popupWa:hover { background: #1ebe5d; }
 
 /* ── Nearby side (right, 40%) ── */
 .nearbySide {

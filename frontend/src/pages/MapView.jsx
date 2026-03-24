@@ -153,12 +153,17 @@ export default function MapView() {
                     <div className={styles.popup}>
                       <strong>{g.name}</strong>
                       <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
-                      <div className={styles.popupRow}>
+                      <div className={styles.popupMeta}>
                         <span>{g.guitarType || 'לא ידוע'}</span>
                         <span className={g.collected ? styles.collected : styles.pending}>
                           {g.collected ? '✓ נאסף' : 'ממתין'}
                         </span>
                       </div>
+                      {g.phone && (
+                        <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}>
+                          <WaIcon /> {g.phone}
+                        </a>
+                      )}
                     </div>
                   </Popup>
                 </CircleMarker>
