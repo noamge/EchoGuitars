@@ -160,9 +160,10 @@ export default function MapView() {
                         </span>
                       </div>
                       {g.phone && (
-                        <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}>
-                          <WaIcon /> {g.phone}
-                        </a>
+                        <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
+                          <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
+                          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
+                        </div>
                       )}
                     </div>
                   </Popup>

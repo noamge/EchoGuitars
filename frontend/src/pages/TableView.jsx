@@ -27,7 +27,7 @@ const COLUMNS = [
   { key: 'street',     label: 'רחוב',       width: 110 },
   { key: 'phone',      label: 'טלפון',      width: 145, render: v => v ? (
     <span style={{ display:'flex', gap:6, alignItems:'center' }}>
-      <span>{v}</span>
+      <a href={`tel:${v}`} style={{ color:'var(--primary)', textDecoration:'none', fontWeight:500 }}>{v}</a>
       <a href={toWhatsApp(v)} target="_blank" rel="noopener noreferrer"
         style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', background:'#25d366', borderRadius:'50%', width:20, height:20, flexShrink:0, textDecoration:'none' }}>
         <WaIcon />
