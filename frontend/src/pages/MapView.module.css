@@ -30,13 +30,19 @@
   .nearbySide {
     flex: 1;
     min-height: 0;
+    overflow: hidden;
     transition: flex 0.3s ease;
+    display: flex;
+    flex-direction: column;
   }
   .nearbySideExpanded {
     flex: 0 0 80% !important;
   }
   .nearbyList {
     max-height: none;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .expandBtn {
     display: flex;
