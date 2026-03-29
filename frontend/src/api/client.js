@@ -66,3 +66,6 @@ export const parseGeneralUpdate = (text) =>
 
 export const getAllGuitarsForSelect = () =>
   api.get('/guitars').then(r => r.data);
+
+export const addGuitar = (data) =>
+  api.post('/guitars', data).then(r => r.data);

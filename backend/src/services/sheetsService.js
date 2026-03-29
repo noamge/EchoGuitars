@@ -346,6 +346,46 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
   return { id: stableId, rowIndex, city: newCity, street: newStreet };
 }
 
+// ── Add a new guitar/donor row ────────────────────────────────────────────────
+async function addGuitar(data) {
+  const sheets = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!A2:V`,
+  });
+  const rows = res.data.values || [];
+
+  // Determine next stable ID
+  const maxId = rows.reduce((max, row) => {
+    const id = Number(row[COL.ID] || 0);
+    return id > max ? id : max;
+  }, rows.length + 1);
+  const newId = maxId + 1;
+
+  const row = new Array(22).fill('');
+  row[COL.SUBMISSION_TIME] = new Date().toLocaleString('he-IL');
+  row[COL.NAME]        = data.name        || '';
+  row[COL.PHONE]       = data.phone       || '';
+  row[COL.CITY]        = data.city        || '';
+  row[COL.STREET]      = data.street      || '';
+  row[COL.GUITAR_TYPE] = data.guitarType  || '';
+  row[COL.COLLECTED]   = data.collected   ? 'TRUE' : 'FALSE';
+  row[COL.NOTES]       = data.notes       || '';
+  row[COL.IMAGE_URL]   = data.imageUrl    || '';
+  row[COL.ID]          = String(newId);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!A:V`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [row] },
+  });
+
+  const newRowIndex = rows.length + 2;
+  return rowToGuitar(row, newRowIndex);
+}
+
 module.exports = {
   getAllGuitars,
   getGuitarByName,
@@ -354,4 +394,5 @@ module.exports = {
   getRegion,
   findAndUpdateCity,
   suggestStreet,
+  addGuitar,
 };

@@ -443,3 +443,87 @@
 
 .actionResultOk  { color: #16a34a; }
 .actionResultErr { color: #dc2626; }
+
+/* ── Upload buttons (gallery + camera) ───────────────────────────────────── */
+
+.uploadBtns {
+  display: flex;
+  gap: 10px;
+}
+
+.uploadBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.uploadBtn:hover {
+  border-color: var(--primary-light);
+  color: var(--primary);
+}
+
+/* ── New donor prompt / form ─────────────────────────────────────────────── */
+
+.newDonorPrompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.newDonorBtn {
+  padding: 5px 14px;
+  background: #f59e0b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.newDonorBtn:hover { background: #d97706; }
+
+.newDonorForm {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.newDonorTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.cancelLink {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  align-self: flex-start;
+}

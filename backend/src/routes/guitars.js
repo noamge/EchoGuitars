@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -169,6 +169,20 @@ router.get('/address-issues', async (req, res) => {
       collected: g.collected,
     })));
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/guitars — add a new donor/guitar record
+router.post('/', async (req, res) => {
+  try {
+    if (useMock()) {
+      return res.status(201).json({ id: 9999, ...req.body });
+    }
+    const result = await addGuitar(req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
