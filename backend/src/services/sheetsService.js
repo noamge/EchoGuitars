@@ -272,10 +272,10 @@ async function updateGuitarByRowIndex(stableId, updates) {
     else throw new Error(`Guitar with ID ${stableId} not found`);
   }
 
-  // Fetch current row
+  // Fetch current row (A–V, all 22 columns including imageUrl in V)
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A${rowIndex}:U${rowIndex}`,
+    range: `${SHEET_TAB}!A${rowIndex}:V${rowIndex}`,
   });
   const row = (res.data.values || [[]])[0];
   while (row.length < 22) row.push(''); // pad to 22 columns (A–V)

@@ -18,7 +18,7 @@ const GUITAR_TYPES = ['קלאסית', 'אקוסטית', 'חשמלית'];
 function CollectMode() {
   const [donorOption, setDonorOption] = useState(null);
   const [donorGuitars, setDonorGuitars] = useState([]);
-  const [selectedRowIndex, setSelectedRowIndex] = useState('');
+  const [selectedGuitarId, setSelectedGuitarId] = useState(''); // guitar.id (stable ID from col U)
   const [donorInputValue, setDonorInputValue] = useState('');
   const [noResults, setNoResults] = useState(false);
 
@@ -40,16 +40,16 @@ function CollectMode() {
   const [resultMsg, setResultMsg]   = useState('');
 
   useEffect(() => {
-    if (!donorOption) { setDonorGuitars([]); setSelectedRowIndex(''); return; }
+    if (!donorOption) { setDonorGuitars([]); setSelectedGuitarId(''); return; }
     getGuitarsByName(donorOption.value).then(list => {
       setDonorGuitars(list);
       if (list.length === 1) prefill(list[0]);
-      else setSelectedRowIndex('');
+      else setSelectedGuitarId('');
     });
   }, [donorOption]);
 
   function prefill(guitar) {
-    setSelectedRowIndex(guitar.rowIndex);
+    setSelectedGuitarId(guitar.id); // use stable ID, not physical rowIndex
     setNotes('');
     setImagePreview('');
     setCollector('');
@@ -59,7 +59,7 @@ function CollectMode() {
   function resetForm() {
     setDonorOption(null);
     setDonorGuitars([]);
-    setSelectedRowIndex('');
+    setSelectedGuitarId('');
     setDonorInputValue('');
     setNoResults(false);
     setNewDonorMode(false);
@@ -80,7 +80,6 @@ function CollectMode() {
   }, []);
 
   const handleGuitarSelect = (rowIndex) => {
-    setSelectedRowIndex(rowIndex);
     const g = donorGuitars.find(g => g.rowIndex === Number(rowIndex));
     if (g) prefill(g);
   };
@@ -126,9 +125,9 @@ function CollectMode() {
         return;
       }
 
-      if (!selectedRowIndex) { alert('יש לבחור גיטרה'); setSubmitting(false); return; }
+      if (!selectedGuitarId) { alert('יש לבחור גיטרה'); setSubmitting(false); return; }
 
-      await updateGuitar(selectedRowIndex, {
+      await updateGuitar(selectedGuitarId, {
         collected: true,
         notes:     buildNotes(),
         ...(imageUrl && { imageUrl }),
@@ -144,7 +143,7 @@ function CollectMode() {
     }
   };
 
-  const currentGuitar = donorGuitars.find(g => g.rowIndex === Number(selectedRowIndex));
+  const currentGuitar = donorGuitars.find(g => g.id === Number(selectedGuitarId));
 
   return (
     <>
@@ -229,7 +228,7 @@ function CollectMode() {
             <label className={styles.label}>בחר גיטרה (לתורם יש {donorGuitars.length} רשומות)</label>
             <select
               className={styles.select}
-              value={selectedRowIndex}
+              value={currentGuitar?.rowIndex ?? ''}
               onChange={e => handleGuitarSelect(e.target.value)}
             >
               <option value="">— בחר —</option>
@@ -292,7 +291,7 @@ function CollectMode() {
         <button
           type="submit"
           className={styles.submitBtn}
-          disabled={submitting || (!selectedRowIndex && !newDonorMode)}
+          disabled={submitting || (!selectedGuitarId && !newDonorMode)}
         >
           {submitting ? 'שומר...' : newDonorMode ? '+ הוסף תורם וסמן כנאסף' : '✓ סמן כנאסף'}
         </button>
@@ -357,7 +356,7 @@ function DonateMode() {
     const results = [];
     for (const guitar of selectedGuitars) {
       try {
-        await updateGuitar(guitar.rowIndex, { donatedTo: orgName.trim(), collected: true });
+        await updateGuitar(guitar.id, { donatedTo: orgName.trim(), collected: true });
         results.push({ guitar, ok: true });
       } catch (err) {
         results.push({ guitar, ok: false, err: err.message });
