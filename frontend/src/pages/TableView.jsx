@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getGuitars } from '../api/client';
+import { getGuitars, updateGuitar } from '../api/client';
 import styles from './TableView.module.css';
 
 function toWhatsApp(phone) {
@@ -61,6 +61,7 @@ export default function TableView() {
   const [search, setSearch]   = useState('');
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
+  const [marking, setMarking] = useState(null);
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
@@ -104,6 +105,18 @@ export default function TableView() {
     }
     return rows;
   }, [guitars, filterField, filterValue, search, sortKey, sortDir]);
+
+  const markCollected = async (id) => {
+    setMarking(id);
+    try {
+      await updateGuitar(id, { collected: true });
+      setGuitars(prev => prev.map(g => g.id === id ? { ...g, collected: true } : g));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setMarking(null);
+    }
+  };
 
   const clearFilter = () => setSearchParams({});
 
@@ -149,6 +162,7 @@ export default function TableView() {
                       : ' ⇅'}
                   </th>
                 ))}
+                <th style={{ width: 90, minWidth: 90 }}>פעולה</th>
               </tr>
             </thead>
             <tbody>
@@ -159,6 +173,17 @@ export default function TableView() {
                       {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
                     </td>
                   ))}
+                  <td>
+                    {!g.collected && (
+                      <button
+                        className={styles.collectBtn}
+                        onClick={() => markCollected(g.id)}
+                        disabled={marking === g.id}
+                      >
+                        {marking === g.id ? '...' : '✓ נאסף'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

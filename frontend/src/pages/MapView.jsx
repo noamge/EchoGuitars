@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getGuitarsForMap } from '../api/client';
+import { getGuitarsForMap, updateGuitar } from '../api/client';
 import { MapPin, Navigation, Search } from 'lucide-react';
 import styles from './MapView.module.css';
 
@@ -45,12 +45,25 @@ export default function MapView() {
   const [locating, setLocating]         = useState(false);
   const [nearbyExpanded, setNearbyExpanded] = useState(false);
   const [nearby, setNearby]             = useState([]);
+  const [marking, setMarking]           = useState(null); // guitar id being marked
 
   useEffect(() => {
     getGuitarsForMap()
       .then(setGuitars)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
+  }, []);
+
+  const markCollected = useCallback(async (id) => {
+    setMarking(id);
+    try {
+      await updateGuitar(id, { collected: true });
+      setGuitars(prev => prev.map(g => g.id === id ? { ...g, collected: true } : g));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setMarking(null);
+    }
   }, []);
 
   const filters = ['הכל', 'נאסף', 'ממתין'];
@@ -166,6 +179,16 @@ export default function MapView() {
                           <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
                         </div>
                       )}
+                      {!g.collected && (
+                        <button
+                          className={styles.popupCollectBtn}
+                          onClick={() => markCollected(g.id)}
+                          disabled={marking === g.id}
+                        >
+                          {marking === g.id ? '...' : '✓ סמן כנאסף'}
+                        </button>
+                      )}
+                      {g.collected && <div className={styles.collected}>✓ נאסף</div>}
                     </div>
                   </Popup>
                 </CircleMarker>

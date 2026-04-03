@@ -103,6 +103,15 @@
 .popupMeta { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 .collected { color: #166534; font-weight: 600; }
 .pending   { color: #b45309; font-weight: 600; }
+.popupCollectBtn {
+  margin-top: 6px; width: 100%;
+  padding: 5px 0; background: var(--primary); color: #fff;
+  border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+}
+.popupCollectBtn:hover:not(:disabled) { background: var(--primary-dark); }
+.popupCollectBtn:disabled { opacity: 0.6; }
+
 .popupCall {
   font-size: 11px; color: var(--primary); font-weight: 600;
   text-decoration: none;

@@ -138,3 +138,18 @@
 .table tbody tr.collected:nth-child(even) {
   background: #dbeafe;
 }
+
+.collectBtn {
+  padding: 4px 10px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.collectBtn:hover:not(:disabled) { background: var(--primary-dark); }
+.collectBtn:disabled { opacity: 0.5; }
