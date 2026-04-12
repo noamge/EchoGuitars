@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
 import { MapPin, Navigation, Search } from 'lucide-react';
@@ -33,6 +34,16 @@ function WaIcon() {
 }
 
 const MARKER_COLOR = { collected: '#2d6a4f', pending: '#f4a261' };
+
+function makeGroupIcon(count, bg) {
+  return L.divIcon({
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:${bg};border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;box-shadow:0 1px 5px rgba(0,0,0,.35)">${count}</div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
+}
 
 // Haversine distance in km
 function haversine(lat1, lon1, lat2, lon2) {
@@ -77,6 +88,17 @@ export default function MapView() {
       setMarking(null);
     }
   }, []);
+
+  // Group visible guitars by exact lat/lon (same coords = same geocoded location)
+  const groupedVisible = useMemo(() => {
+    const map = new Map();
+    for (const g of visible) {
+      const key = `${g.lat},${g.lon}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(g);
+    }
+    return [...map.values()];
+  }, [visible]);
 
   const filters = ['הכל', 'נאסף', 'ממתין'];
   const visible = filter === 'הכל' ? guitars
@@ -168,53 +190,67 @@ export default function MapView() {
                   <Popup>המיקום שלך</Popup>
                 </CircleMarker>
               )}
-              {visible.map(g => {
-                const isHighlighted = g.id === highlightedId;
+              {groupedVisible.map(group => {
+                const g0 = group[0];
+                const groupKey = `${g0.lat},${g0.lon}`;
+                const isHighlighted = group.some(g => g.id === highlightedId);
+
+                // Popup content shared between single and group
+                const guitarPopupItem = (g, showDivider) => (
+                  <div key={g.id} style={showDivider ? { borderTop:'1px solid #e5e7eb', marginTop:8, paddingTop:8 } : {}}>
+                    <strong>{g.name}</strong>
+                    <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
+                    <div className={styles.popupMeta}>
+                      <span>{g.guitarType || 'לא ידוע'}</span>
+                      <span className={g.collected ? styles.collected : styles.pending}>
+                        {g.collected ? '✓ נאסף' : 'ממתין'}
+                      </span>
+                    </div>
+                    {g.phone && (
+                      <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
+                        <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
+                        <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
+                      </div>
+                    )}
+                    {!g.collected && (
+                      <button className={styles.popupCollectBtn} onClick={() => markCollected(g.id)} disabled={marking === g.id}>
+                        {marking === g.id ? '...' : '✓ סמן כנאסף'}
+                      </button>
+                    )}
+                    {g.collected && <div className={styles.collected}>✓ נאסף</div>}
+                    <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
+                      📋 פתח בטבלה
+                    </button>
+                  </div>
+                );
+
+                if (group.length === 1) {
+                  const g = group[0];
+                  return (
+                    <CircleMarker
+                      key={groupKey}
+                      center={[g.lat, g.lon]}
+                      radius={isHighlighted ? 14 : 8}
+                      fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
+                      color="#fff" weight={isHighlighted ? 3 : 2} fillOpacity={isHighlighted ? 1 : 0.85}
+                    >
+                      <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
+                    </CircleMarker>
+                  );
+                }
+
+                // Multiple guitars at same location
+                const allCollected = group.every(g => g.collected);
+                const bg = isHighlighted ? '#4361ee' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
                 return (
-                  <CircleMarker
-                    key={g.id}
-                    center={[g.lat, g.lon]}
-                    radius={isHighlighted ? 14 : 8}
-                    fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
-                    color="#fff"
-                    weight={isHighlighted ? 3 : 2}
-                    fillOpacity={isHighlighted ? 1 : 0.85}
-                  >
-                    <Popup>
+                  <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
+                    <Popup maxWidth={250}>
                       <div className={styles.popup}>
-                        <strong>{g.name}</strong>
-                        <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
-                        <div className={styles.popupMeta}>
-                          <span>{g.guitarType || 'לא ידוע'}</span>
-                          <span className={g.collected ? styles.collected : styles.pending}>
-                            {g.collected ? '✓ נאסף' : 'ממתין'}
-                          </span>
-                        </div>
-                        {g.phone && (
-                          <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
-                            <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
-                            <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
-                          </div>
-                        )}
-                        {!g.collected && (
-                          <button
-                            className={styles.popupCollectBtn}
-                            onClick={() => markCollected(g.id)}
-                            disabled={marking === g.id}
-                          >
-                            {marking === g.id ? '...' : '✓ סמן כנאסף'}
-                          </button>
-                        )}
-                        {g.collected && <div className={styles.collected}>✓ נאסף</div>}
-                        <button
-                          className={styles.popupTableBtn}
-                          onClick={() => navigate(`/table?field=id&value=${g.id}`)}
-                        >
-                          📋 פתח בטבלה
-                        </button>
+                        <strong style={{ fontSize:13 }}>{group.length} גיטרות במיקום זה</strong>
+                        {group.map((g, i) => guitarPopupItem(g, i > 0))}
                       </div>
                     </Popup>
-                  </CircleMarker>
+                  </Marker>
                 );
               })}
             </MapContainer>

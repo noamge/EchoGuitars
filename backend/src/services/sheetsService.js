@@ -208,7 +208,7 @@ function rowToGuitar(row, rowIndex) {
     city,
     rawCity:   row[COL.CITY] || '',
     rawStreet: row[COL.STREET] || '',
-    street:    row[COL.STREET] || '',
+    street:    suggestStreet(row[COL.CITY], row[COL.STREET], city) || '',
     email:     row[COL.EMAIL] || '',
     guitarType: row[COL.GUITAR_TYPE] || '',     // Hebrew: קלאסית/אקוסטית/חשמלית
     working:   row[COL.WORKING] || '',
