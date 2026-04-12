@@ -308,7 +308,23 @@ export default function MapView() {
 
         {nearby.length > 0 && (
           <div className={styles.nearbyList}>
-            <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
+            <div className={styles.nearbyListHeader}>
+              <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
+              <a
+                className={styles.waExportBtn}
+                href={(() => {
+                  const lines = nearby.map((g, i) =>
+                    `${i + 1}. ${g.name}${g.phone ? ` | ${g.phone}` : ''}${g.city ? ` | ${g.city}${g.street ? `, ${g.street}` : ''}` : ''}`
+                  ).join('\n');
+                  const msg = `גיטרות לאיסוף בקרבת ${resolvedAddress || 'המיקום שנבחר'}:\n\n${lines}`;
+                  return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
+                })()}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <WaIcon /> שלח ברשימה
+              </a>
+            </div>
             {nearby.map((g, i) => (
               <div
                 key={g.id}

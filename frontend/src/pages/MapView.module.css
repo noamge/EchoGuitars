@@ -209,6 +209,20 @@
 
 .nearbyList { flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
 
+.nearbyListHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 4px;
+}
+
+.waExportBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; background: #25d366; color: #fff;
+  border-radius: 16px; font-size: 12px; font-weight: 600;
+  text-decoration: none; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.waExportBtn:hover { background: #1ebe5d; }
+
 .nearbyCard {
   display: flex; align-items: flex-start; gap: 10px;
   background: var(--bg-card); border-radius: 10px;
