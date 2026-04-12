@@ -483,7 +483,9 @@ function AiMode() {
   const [text, setText]               = useState('');
   const [loading, setLoading]         = useState(false);
   const [actions, setActions]         = useState(null);
-  const [confirmed, setConfirmed]     = useState({}); // idx → true/false for low-confidence
+  const [confirmed, setConfirmed]     = useState({});
+  const [matchedGuitars, setMatchedGuitars] = useState({}); // idx → [{id,name,city,...}]
+  const [chosenIds, setChosenIds]     = useState({}); // idx → chosen guitar id
   const [saving, setSaving]           = useState(false);
   const [saveResults, setSaveResults] = useState([]);
   const [recording, setRecording]     = useState(false);
@@ -518,6 +520,8 @@ function AiMode() {
     setActions(null);
     setSaveResults([]);
     setConfirmed({});
+    setMatchedGuitars({});
+    setChosenIds({});
     try {
       const res = await parseGeneralUpdate(text);
       setActions(res.actions || []);
@@ -529,6 +533,16 @@ function AiMode() {
   };
 
   const removeAction = (idx) => setActions(prev => prev.filter((_, i) => i !== idx));
+
+  const handleConfirm = async (idx, action) => {
+    setConfirmed(c => ({ ...c, [idx]: true }));
+    if (!action.guitarId && action.guitarName) {
+      try {
+        const guitars = await getGuitarsByName(action.guitarName);
+        setMatchedGuitars(m => ({ ...m, [idx]: guitars }));
+      } catch { /* ignore */ }
+    }
+  };
 
   const handleSave = async () => {
     if (!actions || actions.length === 0) return;
@@ -542,8 +556,9 @@ function AiMode() {
         results.push({ action, ok: false, err: 'דולג — לא אושר' });
         continue;
       }
-      if (!action.guitarId) {
-        results.push({ action, ok: false, err: 'גיטרה לא זוהתה' });
+      const guitarId = chosenIds[i] ?? action.guitarId;
+      if (!guitarId) {
+        results.push({ action, ok: false, err: 'גיטרה לא זוהתה — יש לבחור מהרשימה' });
         continue;
       }
       let updates = {};
@@ -552,7 +567,7 @@ function AiMode() {
       else if (action.action === 'donated') updates = { donatedTo: action.donatedTo, collected: true };
       else if (action.action === 'notes') updates = { notes: action.notes };
       try {
-        await updateGuitar(action.guitarId, updates);
+        await updateGuitar(guitarId, updates);
         results.push({ action, ok: true });
       } catch (err) {
         results.push({ action, ok: false, err: err.message });
@@ -563,7 +578,10 @@ function AiMode() {
   };
 
   const highConfidenceCount = actions
-    ? actions.filter((a, i) => a.guitarId && (a.confidence !== 'low' || confirmed[i])).length
+    ? actions.filter((a, i) => {
+        const id = chosenIds[i] ?? a.guitarId;
+        return id && (a.confidence !== 'low' || confirmed[i]);
+      }).length
     : 0;
 
   return (
@@ -649,7 +667,7 @@ function AiMode() {
                           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
                             <button
                               type="button"
-                              onClick={() => setConfirmed(c => ({ ...c, [idx]: true }))}
+                              onClick={() => handleConfirm(idx, action)}
                               style={{ padding: '3px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}
                             >
                               כן, נכון
@@ -663,7 +681,28 @@ function AiMode() {
                             </button>
                           </div>
                         )}
-                        {isConfirmed && <span style={{ color: '#16a34a', marginRight: 8, fontSize: 12 }}>✓ אושר</span>}
+                        {isConfirmed && !action.guitarId && matchedGuitars[idx] && (
+                          <div style={{ marginTop: 6 }}>
+                            <div style={{ fontSize: 12, marginBottom: 4, color: '#92400e' }}>בחר את הגיטרה הספציפית:</div>
+                            <select
+                              className={styles.select}
+                              value={chosenIds[idx] ?? ''}
+                              onChange={e => setChosenIds(c => ({ ...c, [idx]: Number(e.target.value) }))}
+                              style={{ fontSize: 12, padding: '4px 8px' }}
+                            >
+                              <option value="">— בחר —</option>
+                              {matchedGuitars[idx].map(g => (
+                                <option key={g.id} value={g.id}>
+                                  {g.name} | {g.city}{g.street ? `, ${g.street}` : ''} | {g.guitarType || 'סוג לא ידוע'}
+                                  {g.collected ? ' ✓ נאספה' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        {isConfirmed && (action.guitarId || chosenIds[idx]) && (
+                          <span style={{ color: '#16a34a', marginRight: 8, fontSize: 12 }}>✓ אושר</span>
+                        )}
                       </div>
                     )}
                   </div>
