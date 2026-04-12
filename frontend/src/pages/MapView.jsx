@@ -1,9 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
 import { MapPin, Navigation, Search } from 'lucide-react';
 import styles from './MapView.module.css';
+
+// Flies the map to a target {lat, lon} whenever it changes
+function FlyTo({ target }) {
+  const map = useMap();
+  useEffect(() => {
+    if (target) map.flyTo([target.lat, target.lon], 15, { duration: 0.8 });
+  }, [target, map]);
+  return null;
+}
 
 function toWhatsApp(phone) {
   if (!phone) return null;
@@ -35,6 +45,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 export default function MapView() {
+  const navigate = useNavigate();
   const [guitars, setGuitars]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
@@ -45,7 +56,8 @@ export default function MapView() {
   const [locating, setLocating]         = useState(false);
   const [nearbyExpanded, setNearbyExpanded] = useState(false);
   const [nearby, setNearby]             = useState([]);
-  const [marking, setMarking]           = useState(null); // guitar id being marked
+  const [marking, setMarking]           = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
 
   useEffect(() => {
     getGuitarsForMap()
@@ -147,6 +159,7 @@ export default function MapView() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              <FlyTo target={guitars.find(g => g.id === highlightedId) || null} />
               {userLocation && (
                 <CircleMarker
                   center={[userLocation.lat, userLocation.lon]}
@@ -155,44 +168,55 @@ export default function MapView() {
                   <Popup>המיקום שלך</Popup>
                 </CircleMarker>
               )}
-              {visible.map(g => (
-                <CircleMarker
-                  key={g.id}
-                  center={[g.lat, g.lon]}
-                  radius={8}
-                  fillColor={g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending}
-                  color="#fff" weight={2} fillOpacity={0.85}
-                >
-                  <Popup>
-                    <div className={styles.popup}>
-                      <strong>{g.name}</strong>
-                      <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
-                      <div className={styles.popupMeta}>
-                        <span>{g.guitarType || 'לא ידוע'}</span>
-                        <span className={g.collected ? styles.collected : styles.pending}>
-                          {g.collected ? '✓ נאסף' : 'ממתין'}
-                        </span>
-                      </div>
-                      {g.phone && (
-                        <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
-                          <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
-                          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
+              {visible.map(g => {
+                const isHighlighted = g.id === highlightedId;
+                return (
+                  <CircleMarker
+                    key={g.id}
+                    center={[g.lat, g.lon]}
+                    radius={isHighlighted ? 14 : 8}
+                    fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
+                    color="#fff"
+                    weight={isHighlighted ? 3 : 2}
+                    fillOpacity={isHighlighted ? 1 : 0.85}
+                  >
+                    <Popup>
+                      <div className={styles.popup}>
+                        <strong>{g.name}</strong>
+                        <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
+                        <div className={styles.popupMeta}>
+                          <span>{g.guitarType || 'לא ידוע'}</span>
+                          <span className={g.collected ? styles.collected : styles.pending}>
+                            {g.collected ? '✓ נאסף' : 'ממתין'}
+                          </span>
                         </div>
-                      )}
-                      {!g.collected && (
+                        {g.phone && (
+                          <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
+                            <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
+                            <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
+                          </div>
+                        )}
+                        {!g.collected && (
+                          <button
+                            className={styles.popupCollectBtn}
+                            onClick={() => markCollected(g.id)}
+                            disabled={marking === g.id}
+                          >
+                            {marking === g.id ? '...' : '✓ סמן כנאסף'}
+                          </button>
+                        )}
+                        {g.collected && <div className={styles.collected}>✓ נאסף</div>}
                         <button
-                          className={styles.popupCollectBtn}
-                          onClick={() => markCollected(g.id)}
-                          disabled={marking === g.id}
+                          className={styles.popupTableBtn}
+                          onClick={() => navigate(`/table?field=id&value=${g.id}`)}
                         >
-                          {marking === g.id ? '...' : '✓ סמן כנאסף'}
+                          📋 פתח בטבלה
                         </button>
-                      )}
-                      {g.collected && <div className={styles.collected}>✓ נאסף</div>}
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              ))}
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                );
+              })}
             </MapContainer>
           )}
         </div>
@@ -250,7 +274,12 @@ export default function MapView() {
           <div className={styles.nearbyList}>
             <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
             {nearby.map((g, i) => (
-              <div key={g.id} className={styles.nearbyCard}>
+              <div
+                key={g.id}
+                className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''}`}
+                onClick={() => setHighlightedId(g.id)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className={styles.nearbyRank}>#{i + 1}</div>
                 <div className={styles.nearbyInfo}>
                   <div className={styles.nearbyName}>{g.name}</div>

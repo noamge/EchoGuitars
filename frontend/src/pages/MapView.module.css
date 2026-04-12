@@ -112,6 +112,20 @@
 .popupCollectBtn:hover:not(:disabled) { background: var(--primary-dark); }
 .popupCollectBtn:disabled { opacity: 0.6; }
 
+.popupTableBtn {
+  margin-top: 5px; width: 100%;
+  padding: 5px 0; background: transparent; color: var(--primary);
+  border: 1.5px solid var(--primary); border-radius: 6px;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.popupTableBtn:hover { background: var(--primary); color: #fff; }
+
+.nearbyCardHighlighted {
+  border-color: #4361ee !important;
+  background: #eff6ff !important;
+  box-shadow: 0 0 0 2px #4361ee44;
+}
+
 .popupCall {
   font-size: 11px; color: var(--primary); font-weight: 600;
   text-decoration: none;
