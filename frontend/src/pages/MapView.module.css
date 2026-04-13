@@ -86,6 +86,16 @@
 
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
+.viewModeBtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 16px;
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  font-size: 12px; font-weight: 500; color: var(--text);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.viewModeBtn:hover { border-color: var(--primary-light); color: var(--primary); }
+.viewModeBtnActive { background: var(--primary); color: #fff; border-color: var(--primary); }
+
 .mapWrapper { flex: 1; overflow: hidden; position: relative; }
 .map { height: 100%; width: 100%; }
 

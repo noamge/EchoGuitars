@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
-import { MapPin, Navigation, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot } from 'lucide-react';
 import styles from './MapView.module.css';
 
 // Flies the map to a target {lat, lon} whenever it changes
@@ -36,12 +36,13 @@ function MapInvalidator({ fullscreen }) {
 const CLUSTER_RADIUS_PX = 30;
 
 // Clusters visible guitars by pixel proximity at the current zoom level
-function MapMarkers({ visible, highlightedId, marking, markCollected, navigate }) {
+function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, viewMode }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
 
   const clusters = useMemo(() => {
+    if (viewMode === 'dots') return null;
     const items = visible.filter(g => g.lat && g.lon);
     const used = new Set();
     const result = [];
@@ -66,7 +67,7 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate }
     return result;
   // zoom is needed so clusters recompute on every zoom change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, zoom, map]);
+  }, [visible, zoom, map, viewMode]);
 
   const guitarPopupItem = (g, showDivider) => (
     <div key={g.id} style={showDivider ? { borderTop: '1px solid #e5e7eb', marginTop: 8, paddingTop: 8 } : {}}>
@@ -95,6 +96,25 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate }
       </button>
     </div>
   );
+
+  if (viewMode === 'dots') {
+    return visible.filter(g => g.lat && g.lon).map(g => {
+      const isHighlighted = g.id === highlightedId;
+      return (
+        <CircleMarker
+          key={g.id}
+          center={[g.lat, g.lon]}
+          radius={isHighlighted ? 10 : 4}
+          fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
+          color={isHighlighted ? '#fff' : 'transparent'}
+          weight={isHighlighted ? 2 : 0}
+          fillOpacity={isHighlighted ? 1 : 0.75}
+        >
+          <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
+        </CircleMarker>
+      );
+    });
+  }
 
   return clusters.map(group => {
     const g0 = group[0];
@@ -185,6 +205,7 @@ export default function MapView() {
   const [marking, setMarking]           = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [viewMode, setViewMode] = useState('cluster'); // 'cluster' | 'dots'
 
   useEffect(() => {
     getGuitarsForMap()
@@ -275,6 +296,14 @@ export default function MapView() {
             ))}
           </div>
           <span className={styles.count}>{visible.length} גיטרות</span>
+          <button
+            className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
+            onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}
+            title={viewMode === 'cluster' ? 'עבור לתצוגת נקודות' : 'עבור לתצוגת קיבוץ'}
+          >
+            {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
+            {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
+          </button>
         </div>
 
         <div className={styles.mapWrapper}>
@@ -309,6 +338,7 @@ export default function MapView() {
                 marking={marking}
                 markCollected={markCollected}
                 navigate={navigate}
+                viewMode={viewMode}
               />
             </MapContainer>
           )}
