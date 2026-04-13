@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -14,6 +14,121 @@ function FlyTo({ target }) {
     if (target) map.flyTo([target.lat, target.lon], 15, { duration: 0.8 });
   }, [target, map]);
   return null;
+}
+
+// Calls invalidateSize whenever the container resizes (fixes missing tiles after layout changes)
+function MapInvalidator({ fullscreen }) {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 120);
+    return () => clearTimeout(t);
+  }, [fullscreen, map]);
+  useEffect(() => {
+    if (!window.ResizeObserver) return;
+    const el = map.getContainer();
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
+const CLUSTER_RADIUS_PX = 30;
+
+// Clusters visible guitars by pixel proximity at the current zoom level
+function MapMarkers({ visible, highlightedId, marking, markCollected, navigate }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
+
+  const clusters = useMemo(() => {
+    const items = visible.filter(g => g.lat && g.lon);
+    const used = new Set();
+    const result = [];
+    for (let i = 0; i < items.length; i++) {
+      if (used.has(i)) continue;
+      const g = items[i];
+      const cluster = [g];
+      used.add(i);
+      const p1 = map.latLngToContainerPoint([g.lat, g.lon]);
+      for (let j = i + 1; j < items.length; j++) {
+        if (used.has(j)) continue;
+        const g2 = items[j];
+        const p2 = map.latLngToContainerPoint([g2.lat, g2.lon]);
+        const dx = p1.x - p2.x, dy = p1.y - p2.y;
+        if (Math.sqrt(dx * dx + dy * dy) < CLUSTER_RADIUS_PX) {
+          cluster.push(g2);
+          used.add(j);
+        }
+      }
+      result.push(cluster);
+    }
+    return result;
+  // zoom is needed so clusters recompute on every zoom change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, zoom, map]);
+
+  const guitarPopupItem = (g, showDivider) => (
+    <div key={g.id} style={showDivider ? { borderTop: '1px solid #e5e7eb', marginTop: 8, paddingTop: 8 } : {}}>
+      <strong>{g.name}</strong>
+      <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
+      <div className={styles.popupMeta}>
+        <span>{g.guitarType || 'לא ידוע'}</span>
+        <span className={g.collected ? styles.collected : styles.pending}>
+          {g.collected ? '✓ נאסף' : 'ממתין'}
+        </span>
+      </div>
+      {g.phone && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+          <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
+          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
+        </div>
+      )}
+      {!g.collected && (
+        <button className={styles.popupCollectBtn} onClick={() => markCollected(g.id)} disabled={marking === g.id}>
+          {marking === g.id ? '...' : '✓ סמן כנאסף'}
+        </button>
+      )}
+      {g.collected && <div className={styles.collected}>✓ נאסף</div>}
+      <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
+        📋 פתח בטבלה
+      </button>
+    </div>
+  );
+
+  return clusters.map(group => {
+    const g0 = group[0];
+    const groupKey = `${g0.lat},${g0.lon}-${group.length}`;
+    const isHighlighted = group.some(g => g.id === highlightedId);
+
+    if (group.length === 1) {
+      const g = group[0];
+      return (
+        <CircleMarker
+          key={groupKey}
+          center={[g.lat, g.lon]}
+          radius={isHighlighted ? 14 : 8}
+          fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
+          color="#fff" weight={isHighlighted ? 3 : 2} fillOpacity={isHighlighted ? 1 : 0.85}
+        >
+          <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
+        </CircleMarker>
+      );
+    }
+
+    const allCollected = group.every(g => g.collected);
+    const bg = isHighlighted ? '#4361ee' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+    return (
+      <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
+        <Popup maxWidth={250}>
+          <div className={styles.popup}>
+            <strong style={{ fontSize: 13 }}>{group.length} גיטרות במיקום זה</strong>
+            {group.map((g, i) => guitarPopupItem(g, i > 0))}
+          </div>
+        </Popup>
+      </Marker>
+    );
+  });
 }
 
 function toWhatsApp(phone) {
@@ -94,17 +209,6 @@ export default function MapView() {
   const visible = filter === 'הכל' ? guitars
     : filter === 'נאסף' ? guitars.filter(g => g.collected)
     : guitars.filter(g => !g.collected);
-
-  // Group visible guitars by exact lat/lon (same coords = same geocoded location)
-  const groupedVisible = useMemo(() => {
-    const map = new Map();
-    for (const g of visible) {
-      const key = `${g.lat},${g.lon}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(g);
-    }
-    return [...map.values()];
-  }, [visible]);
 
   // Calculate top 10 nearest uncollected guitars
   const calcNearby = useCallback((lat, lon) => {
@@ -189,6 +293,7 @@ export default function MapView() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              <MapInvalidator fullscreen={mapFullscreen} />
               <FlyTo target={guitars.find(g => g.id === highlightedId) || null} />
               {userLocation && (
                 <CircleMarker
@@ -198,69 +303,13 @@ export default function MapView() {
                   <Popup>המיקום שלך</Popup>
                 </CircleMarker>
               )}
-              {groupedVisible.map(group => {
-                const g0 = group[0];
-                const groupKey = `${g0.lat},${g0.lon}`;
-                const isHighlighted = group.some(g => g.id === highlightedId);
-
-                // Popup content shared between single and group
-                const guitarPopupItem = (g, showDivider) => (
-                  <div key={g.id} style={showDivider ? { borderTop:'1px solid #e5e7eb', marginTop:8, paddingTop:8 } : {}}>
-                    <strong>{g.name}</strong>
-                    <div className={styles.popupSub}>{g.city}{g.street ? `, ${g.street}` : ''}</div>
-                    <div className={styles.popupMeta}>
-                      <span>{g.guitarType || 'לא ידוע'}</span>
-                      <span className={g.collected ? styles.collected : styles.pending}>
-                        {g.collected ? '✓ נאסף' : 'ממתין'}
-                      </span>
-                    </div>
-                    {g.phone && (
-                      <div style={{ display:'flex', gap:6, alignItems:'center', justifyContent:'center' }}>
-                        <a href={`tel:${g.phone}`} className={styles.popupCall}>📞 {g.phone}</a>
-                        <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
-                      </div>
-                    )}
-                    {!g.collected && (
-                      <button className={styles.popupCollectBtn} onClick={() => markCollected(g.id)} disabled={marking === g.id}>
-                        {marking === g.id ? '...' : '✓ סמן כנאסף'}
-                      </button>
-                    )}
-                    {g.collected && <div className={styles.collected}>✓ נאסף</div>}
-                    <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
-                      📋 פתח בטבלה
-                    </button>
-                  </div>
-                );
-
-                if (group.length === 1) {
-                  const g = group[0];
-                  return (
-                    <CircleMarker
-                      key={groupKey}
-                      center={[g.lat, g.lon]}
-                      radius={isHighlighted ? 14 : 8}
-                      fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
-                      color="#fff" weight={isHighlighted ? 3 : 2} fillOpacity={isHighlighted ? 1 : 0.85}
-                    >
-                      <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
-                    </CircleMarker>
-                  );
-                }
-
-                // Multiple guitars at same location
-                const allCollected = group.every(g => g.collected);
-                const bg = isHighlighted ? '#4361ee' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
-                return (
-                  <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
-                    <Popup maxWidth={250}>
-                      <div className={styles.popup}>
-                        <strong style={{ fontSize:13 }}>{group.length} גיטרות במיקום זה</strong>
-                        {group.map((g, i) => guitarPopupItem(g, i > 0))}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
+              <MapMarkers
+                visible={visible}
+                highlightedId={highlightedId}
+                marking={marking}
+                markCollected={markCollected}
+                navigate={navigate}
+              />
             </MapContainer>
           )}
         </div>
