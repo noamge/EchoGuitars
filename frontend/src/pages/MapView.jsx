@@ -101,17 +101,13 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
     return visible.filter(g => g.lat && g.lon).map(g => {
       const isHighlighted = g.id === highlightedId;
       return (
-        <CircleMarker
+        <Marker
           key={g.id}
-          center={[g.lat, g.lon]}
-          radius={isHighlighted ? 10 : 4}
-          fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
-          color={isHighlighted ? '#fff' : 'transparent'}
-          weight={isHighlighted ? 2 : 0}
-          fillOpacity={isHighlighted ? 1 : 0.75}
+          position={[g.lat, g.lon]}
+          icon={makeGuitarIcon(isHighlighted)}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
-        </CircleMarker>
+        </Marker>
       );
     });
   }
@@ -177,6 +173,17 @@ function makeGroupIcon(count, bg) {
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14],
+  });
+}
+
+function makeGuitarIcon(highlighted) {
+  const size = highlighted ? 22 : 16;
+  return L.divIcon({
+    html: `<div style="font-size:${size}px;line-height:1;filter:${highlighted ? 'drop-shadow(0 0 3px #4361ee)' : 'none'};user-select:none;">🎸</div>`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   });
 }
 
