@@ -86,8 +86,27 @@
 
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
-.mapWrapper { flex: 1; overflow: hidden; }
+.mapWrapper { flex: 1; overflow: hidden; position: relative; }
 .map { height: 100%; width: 100%; }
+
+.fullscreenBtn {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  color: var(--primary-dark);
+  transition: background 0.15s;
+}
+.fullscreenBtn:hover { background: var(--bg); }
 .loading { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
 
 .legend {
@@ -137,6 +156,17 @@
   width: 20px; height: 20px; text-decoration: none; flex-shrink: 0;
 }
 .popupWa:hover { background: #1ebe5d; }
+
+.mapSideFullscreen {
+  flex: 0 0 100% !important;
+  position: fixed !important;
+  inset: 0;
+  z-index: 500;
+  height: 100dvh !important;
+}
+.mapSideFullscreen ~ .nearbySide {
+  display: none;
+}
 
 /* ── Nearby side (right, 40%) ── */
 .nearbySide {

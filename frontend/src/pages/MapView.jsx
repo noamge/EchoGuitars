@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
-import { MapPin, Navigation, Search } from 'lucide-react';
+import { MapPin, Navigation, Search, Maximize2, Minimize2 } from 'lucide-react';
 import styles from './MapView.module.css';
 
 // Flies the map to a target {lat, lon} whenever it changes
@@ -69,6 +69,7 @@ export default function MapView() {
   const [nearby, setNearby]             = useState([]);
   const [marking, setMarking]           = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
 
   useEffect(() => {
     getGuitarsForMap()
@@ -155,7 +156,7 @@ export default function MapView() {
   return (
     <div className={styles.page}>
       {/* ── Left: Map ── */}
-      <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''}`}>
+      <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
         <div className={styles.mapHeader}>
           <h1>מפת גיטרות</h1>
           <div className={styles.filters}>
@@ -173,6 +174,13 @@ export default function MapView() {
         </div>
 
         <div className={styles.mapWrapper}>
+          <button
+            className={styles.fullscreenBtn}
+            onClick={() => setMapFullscreen(f => !f)}
+            title={mapFullscreen ? 'צא ממסך מלא' : 'מסך מלא'}
+          >
+            {mapFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
           {loading && <div className={styles.loading}>טוען...</div>}
           {error   && <div className={styles.loading} style={{color:'red'}}>שגיאה: {error}</div>}
           {!loading && !error && (
