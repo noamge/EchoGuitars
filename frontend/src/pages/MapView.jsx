@@ -89,6 +89,11 @@ export default function MapView() {
     }
   }, []);
 
+  const filters = ['הכל', 'נאסף', 'ממתין'];
+  const visible = filter === 'הכל' ? guitars
+    : filter === 'נאסף' ? guitars.filter(g => g.collected)
+    : guitars.filter(g => !g.collected);
+
   // Group visible guitars by exact lat/lon (same coords = same geocoded location)
   const groupedVisible = useMemo(() => {
     const map = new Map();
@@ -99,11 +104,6 @@ export default function MapView() {
     }
     return [...map.values()];
   }, [visible]);
-
-  const filters = ['הכל', 'נאסף', 'ממתין'];
-  const visible = filter === 'הכל' ? guitars
-    : filter === 'נאסף' ? guitars.filter(g => g.collected)
-    : guitars.filter(g => !g.collected);
 
   // Calculate top 10 nearest uncollected guitars
   const calcNearby = useCallback((lat, lon) => {
