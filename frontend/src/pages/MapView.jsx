@@ -104,7 +104,7 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
         <Marker
           key={g.id}
           position={[g.lat, g.lon]}
-          icon={makeGuitarIcon(isHighlighted)}
+          icon={makeGuitarIcon(isHighlighted, g.collected)}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
         </Marker>
@@ -176,14 +176,24 @@ function makeGroupIcon(count, bg) {
   });
 }
 
-function makeGuitarIcon(highlighted) {
-  const size = highlighted ? 22 : 16;
+function makeGuitarIcon(highlighted, collected) {
+  const bg = highlighted ? '#4361ee' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+  const size = highlighted ? 28 : 22;
+  const fontSize = highlighted ? 13 : 11;
   return L.divIcon({
-    html: `<div style="font-size:${size}px;line-height:1;filter:${highlighted ? 'drop-shadow(0 0 3px #4361ee)' : 'none'};user-select:none;">🎸</div>`,
+    html: `<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${bg};
+      border:2px solid rgba(255,255,255,0.9);
+      box-shadow:0 1px 4px rgba(0,0,0,0.3)${highlighted ? ',0 0 0 2.5px #4361ee88' : ''};
+      display:flex;align-items:center;justify-content:center;
+      font-size:${fontSize}px;line-height:1;
+      user-select:none;
+    ">🎸</div>`,
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
+    popupAnchor: [0, -(size / 2 + 4)],
   });
 }
 
