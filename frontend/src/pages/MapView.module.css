@@ -32,12 +32,12 @@
   }
   .mapSide {
     flex: none;
-    height: 90vh;
+    height: 72vh;
     border-left: none;
     border-bottom: 1px solid var(--border);
   }
   .mapSideCollapsed {
-    height: 45vh !important;
+    height: 36vh !important;
   }
   .nearbySide {
     flex: none;
@@ -164,9 +164,9 @@
 
 .volunteerLocationRow {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -176,19 +176,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
+  gap: 6px;
+  padding: 5px 10px;
+  background: none;
+  color: var(--primary-dark);
+  border: 1.5px solid var(--border);
   border-radius: 7px;
   cursor: pointer;
-  flex-shrink: 0;
   font-size: 12px;
-  transition: opacity 0.15s;
+  font-weight: 500;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+  align-self: flex-start;
 }
 .volunteerGpsBtn:disabled { opacity: 0.5; cursor: default; }
-.volunteerGpsBtn:not(:disabled):hover { background: var(--primary-dark); }
+.volunteerGpsBtn:not(:disabled):hover { border-color: var(--primary-light); color: var(--primary); }
 
 .volunteerLocationInput {
   flex: 1;

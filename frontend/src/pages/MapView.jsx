@@ -382,23 +382,25 @@ export default function MapView({ isVolunteer = false }) {
         {/* ── Volunteer: compact location row between header and map ── */}
         {isVolunteer && (
           <div className={styles.volunteerLocationRow}>
+            <div className={styles.manualRow}>
+              <input
+                className={styles.volunteerLocationInput}
+                placeholder="הזן איזור איסוף..."
+                value={manualInput}
+                onChange={e => setManualInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
+              />
+              <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
+                <Search size={13} />
+              </button>
+            </div>
             <button
               className={styles.volunteerGpsBtn}
               onClick={detectLocation}
               disabled={locating || loading}
-              title="זהה מיקום אוטומטית"
             >
-              {locating ? '…' : <Navigation size={13} />}
-            </button>
-            <input
-              className={styles.volunteerLocationInput}
-              placeholder="הזן איזור איסוף..."
-              value={manualInput}
-              onChange={e => setManualInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
-            />
-            <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
-              <Search size={13} />
+              <Navigation size={13} />
+              {locating ? 'מאתר...' : 'זיהוי מיקום עצמי'}
             </button>
           </div>
         )}
