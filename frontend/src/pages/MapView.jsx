@@ -337,16 +337,6 @@ export default function MapView({ isVolunteer = false }) {
         </div>
 
         <div className={styles.mapWrapper}>
-          {isVolunteer && (
-            <a
-              href={WA_MANAGER_CONTACT}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.volunteerFab}
-            >
-              <WaIcon /> פנה למנהל לאיסוף גיטרות
-            </a>
-          )}
           <button
             className={styles.fullscreenBtn}
             onClick={() => setMapFullscreen(f => !f)}
@@ -391,6 +381,18 @@ export default function MapView({ isVolunteer = false }) {
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
       </div>
+
+      {/* ── WhatsApp FAB (volunteer): below map, above nearby list ── */}
+      {isVolunteer && (
+        <a
+          href={WA_MANAGER_CONTACT}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.volunteerFab}
+        >
+          <WaIcon /> פנה למנהל לאיסוף גיטרות
+        </a>
+      )}
 
       {/* ── Right: Nearby Picker ── */}
       <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
@@ -438,20 +440,22 @@ export default function MapView({ isVolunteer = false }) {
           <div className={styles.nearbyList}>
             <div className={styles.nearbyListHeader}>
               <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
-              <a
-                className={styles.waExportBtn}
-                href={(() => {
-                  const lines = nearby.map((g, i) =>
-                    `${i + 1}. ${g.name}${g.phone ? ` | ${g.phone}` : ''}${g.city ? ` | ${g.city}${g.street ? `, ${g.street}` : ''}` : ''}`
-                  ).join('\n');
-                  const msg = `גיטרות לאיסוף בקרבת ${resolvedAddress || 'המיקום שנבחר'}:\n\n${lines}`;
-                  return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
-                })()}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <WaIcon /> שלח ברשימה
-              </a>
+              {!isVolunteer && (
+                <a
+                  className={styles.waExportBtn}
+                  href={(() => {
+                    const lines = nearby.map((g, i) =>
+                      `${i + 1}. ${g.name}${g.phone ? ` | ${g.phone}` : ''}${g.city ? ` | ${g.city}${g.street ? `, ${g.street}` : ''}` : ''}`
+                    ).join('\n');
+                    const msg = `גיטרות לאיסוף בקרבת ${resolvedAddress || 'המיקום שנבחר'}:\n\n${lines}`;
+                    return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
+                  })()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <WaIcon /> שלח ברשימה
+                </a>
+              )}
             </div>
             {nearby.map((g, i) => (
               <div

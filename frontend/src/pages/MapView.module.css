@@ -19,38 +19,64 @@
 }
 
 @media (max-width: 700px) {
+  /* Page scrolls naturally — map is pinned to a fixed height, list expands below */
   .page {
     flex-direction: column;
-    height: 100dvh;
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: visible;
+  }
+  /* Override pageVolunteer (height: 100%) so it doesn't re-constrain on mobile */
+  .pageVolunteer {
+    height: auto;
   }
   .mapSide {
-    flex: 0 0 38%;
+    flex: none;
+    height: 45vh;
     border-left: none;
     border-bottom: 1px solid var(--border);
-    transition: flex 0.3s ease;
   }
   .mapSideCollapsed {
-    flex: 0 0 18% !important;
+    height: 30vh !important;
   }
   .nearbySide {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    transition: flex 0.3s ease;
+    flex: none;
+    height: auto;
+    overflow: visible;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
   .nearbySideExpanded {
-    flex: 0 0 82% !important;
+    /* unused in page-scroll mode */
   }
   .nearbyList {
+    flex: none;
+    height: auto;
     max-height: none;
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: visible;
+    padding-bottom: 20px;
   }
+  /* Expand button not needed when the page itself scrolls */
   .expandBtn {
+    display: none;
+  }
+  /* FAB: shown below map, full-width bar */
+  .volunteerFab {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 16px;
+    background: #25d366;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(37,211,102,0.3);
+    transition: background 0.15s;
+    width: 100%;
   }
   .nearbyCard {
     padding: 8px 10px;
@@ -120,28 +146,12 @@
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
 .volunteerFab {
-  position: absolute;
-  bottom: 52px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 22px;
-  background: #25d366;
-  color: #fff;
-  border-radius: 28px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(37,211,102,0.45);
-  transition: background 0.15s, box-shadow 0.15s;
+  /* Hidden on desktop — only shown on mobile in the flow between map and nearby panel */
+  display: none;
 }
 .volunteerFab:hover {
   background: #1ebe5d;
-  box-shadow: 0 6px 20px rgba(37,211,102,0.55);
+  box-shadow: 0 4px 14px rgba(37,211,102,0.5);
 }
 
 .viewModeBtn {

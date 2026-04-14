@@ -63,3 +63,15 @@
   display: flex;
   flex-direction: column;
 }
+
+@media (max-width: 700px) {
+  .shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+  .content {
+    flex: none;
+    overflow: visible;
+  }
+}
