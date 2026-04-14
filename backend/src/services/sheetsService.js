@@ -347,14 +347,30 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
 }
 
 // ── Add a new guitar/donor row ────────────────────────────────────────────────
+// Format date to match Google Forms Hebrew locale output: DD/MM/YYYY HH:MM:SS
+function formatSubmissionTime(d = new Date()) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 async function addGuitar(data) {
   const sheets = getSheetsClient();
 
+  // Read existing rows to find last row with data and max ID
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: `${SHEET_TAB}!A2:V`,
   });
   const rows = res.data.values || [];
+
+  // Find the last row that has actual data (non-empty name in col B)
+  let lastDataRow = 1; // 1-based, default to header row
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i][COL.NAME] && rows[i][COL.NAME].trim()) {
+      lastDataRow = i + 2; // +2: row 1 is header, array is 0-based
+    }
+  }
+  const newRowIndex = lastDataRow + 1;
 
   // Determine next stable ID
   const maxId = rows.reduce((max, row) => {
@@ -364,7 +380,7 @@ async function addGuitar(data) {
   const newId = maxId + 1;
 
   const row = new Array(22).fill('');
-  row[COL.SUBMISSION_TIME] = new Date().toLocaleString('he-IL');
+  row[COL.SUBMISSION_TIME] = formatSubmissionTime();
   row[COL.NAME]        = data.name        || '';
   row[COL.PHONE]       = data.phone       || '';
   row[COL.CITY]        = data.city        || '';
@@ -375,14 +391,15 @@ async function addGuitar(data) {
   row[COL.IMAGE_URL]   = data.imageUrl    || '';
   row[COL.ID]          = String(newId);
 
-  await sheets.spreadsheets.values.append({
+  // Use update (not append) to write to the exact computed row,
+  // so the record lands inside the sheet table and not below it
+  await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A:V`,
+    range: `${SHEET_TAB}!A${newRowIndex}:V${newRowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
 
-  const newRowIndex = rows.length + 2;
   return rowToGuitar(row, newRowIndex);
 }
 
