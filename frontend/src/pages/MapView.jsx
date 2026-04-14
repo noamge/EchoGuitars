@@ -16,6 +16,17 @@ function FlyTo({ target }) {
   return null;
 }
 
+// Fits the map view to show all given positions (user location + top-10 guitars)
+function FitBounds({ positions }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!positions || positions.length === 0) return;
+    const bounds = L.latLngBounds(positions);
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+  }, [positions, map]);
+  return null;
+}
+
 // Calls invalidateSize whenever the container resizes (fixes missing tiles after layout changes)
 function MapInvalidator({ fullscreen }) {
   const map = useMap();
@@ -270,6 +281,15 @@ export default function MapView({ isVolunteer = false }) {
 
   const nearbyIds = useMemo(() => new Set(nearby.map(g => g.id)), [nearby]);
 
+  // Positions to fit in view after location search: user pin + all top-10 guitars
+  const fitBoundsPositions = useMemo(() => {
+    if (!userLocation || nearby.length === 0) return null;
+    return [
+      [userLocation.lat, userLocation.lon],
+      ...nearby.filter(g => g.lat && g.lon).map(g => [g.lat, g.lon]),
+    ];
+  }, [userLocation, nearby]);
+
   const filters = ['הכל', 'נאסף', 'ממתין'];
   const visible = isVolunteer
     ? guitars.filter(g => !g.collected)
@@ -405,6 +425,7 @@ export default function MapView({ isVolunteer = false }) {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapInvalidator fullscreen={mapFullscreen} />
+              <FitBounds positions={fitBoundsPositions} />
               <FlyTo target={guitars.find(g => g.id === highlightedId) || null} />
               {userLocation && (
                 <Marker

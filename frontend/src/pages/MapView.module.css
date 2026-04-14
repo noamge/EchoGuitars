@@ -32,12 +32,12 @@
   }
   .mapSide {
     flex: none;
-    height: 45vh;
+    height: 90vh;
     border-left: none;
     border-bottom: 1px solid var(--border);
   }
   .mapSideCollapsed {
-    height: 30vh !important;
+    height: 45vh !important;
   }
   .nearbySide {
     flex: none;
