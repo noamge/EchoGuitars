@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import AsyncSelect from 'react-select/async';
+import toast, { Toaster } from 'react-hot-toast';
 import {
   getGuitarsByName,
   updateGuitar,
@@ -8,7 +9,7 @@ import {
   parseGeneralUpdate,
   addGuitar,
 } from '../api/client';
-import { Sparkles, Upload, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Sparkles, CheckCircle, AlertCircle, X, Plus } from 'lucide-react';
 import styles from './QuickEdit.module.css';
 
 const GUITAR_TYPES = ['קלאסית', 'אקוסטית', 'חשמלית'];
@@ -28,6 +29,7 @@ function CollectMode() {
   const [newDonorPhone, setNewDonorPhone] = useState('');
   const [newDonorCity, setNewDonorCity] = useState('');
   const [newDonorGuitarType, setNewDonorGuitarType] = useState('');
+  const newDonorFormRef = useRef(null);
 
   const [collector, setCollector]   = useState('');
   const [destination, setDestination] = useState('');
@@ -36,8 +38,6 @@ function CollectMode() {
   const [imagePreview, setImagePreview] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult]         = useState(null);
-  const [resultMsg, setResultMsg]   = useState('');
 
   useEffect(() => {
     if (!donorOption) { setDonorGuitars([]); setSelectedGuitarId(''); return; }
@@ -68,6 +68,12 @@ function CollectMode() {
     setNotes('');
     setImageFile(null); setImagePreview('');
   }
+
+  const openNewDonorMode = (prefillName = '') => {
+    setNewDonorMode(true);
+    setNewDonorName(prefillName);
+    setTimeout(() => newDonorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
 
   const loadDonorOptions = useCallback(async (inputValue) => {
     if (!inputValue || inputValue.length < 2) { setNoResults(false); return []; }
@@ -102,7 +108,6 @@ function CollectMode() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setResult(null);
     try {
       let imageUrl = '';
       if (imageFile) {
@@ -119,8 +124,7 @@ function CollectMode() {
           notes:       buildNotes(),
           ...(imageUrl && { imageUrl }),
         });
-        setResult('success');
-        setResultMsg('תורם חדש נוסף והגיטרה סומנה כנאספה!');
+        toast.success('תורם חדש נוסף והגיטרה סומנה כנאספה!');
         resetForm();
         return;
       }
@@ -132,12 +136,10 @@ function CollectMode() {
         notes:     buildNotes(),
         ...(imageUrl && { imageUrl }),
       });
-      setResult('success');
-      setResultMsg('הגיטרה סומנה כ"נאספה" בהצלחה!');
+      toast.success('הגיטרה סומנה כ"נאספה" בהצלחה!');
       resetForm();
     } catch (err) {
-      setResult('error');
-      setResultMsg(err.message);
+      toast.error('שגיאה: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -147,7 +149,16 @@ function CollectMode() {
 
   return (
     <>
-      <p className={styles.sectionSub}>מלאו את הטופס כדי לסמן גיטרה כנאספה</p>
+      <div className={styles.collectHeader}>
+        <p className={styles.sectionSub}>מלאו את הטופס כדי לסמן גיטרה כנאספה</p>
+        <button
+          type="button"
+          className={styles.newGuitarBtn}
+          onClick={() => openNewDonorMode()}
+        >
+          <Plus size={15} /> גיטרה חדשה שנאספה
+        </button>
+      </div>
       <form className={styles.form} onSubmit={handleSubmit}>
         <label className={styles.label}>שם האוסף</label>
         <input
@@ -189,7 +200,7 @@ function CollectMode() {
                 <button
                   type="button"
                   className={styles.newDonorBtn}
-                  onClick={() => { setNewDonorMode(true); setNewDonorName(donorInputValue); }}
+                  onClick={() => openNewDonorMode(donorInputValue)}
                 >
                   + הוסף תורם חדש
                 </button>
@@ -197,7 +208,7 @@ function CollectMode() {
             )}
           </>
         ) : (
-          <div className={styles.newDonorForm}>
+          <div className={styles.newDonorForm} ref={newDonorFormRef}>
             <div className={styles.newDonorTitle}>🎸 הוספת תורם חדש</div>
             <label className={styles.label}>שם מלא</label>
             <input className={styles.input} placeholder="שם מלא (לא חובה)" value={newDonorName} onChange={e => setNewDonorName(e.target.value)} />
@@ -279,13 +290,6 @@ function CollectMode() {
         </div>
         {imagePreview && (
           <img src={imagePreview} alt="preview" className={styles.preview} style={{ borderRadius: 8 }} />
-        )}
-
-        {result && (
-          <div className={`${styles.alert} ${result === 'success' ? styles.success : styles.error}`}>
-            {result === 'success' ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
-            {resultMsg}
-          </div>
         )}
 
         <button
@@ -757,6 +761,7 @@ export default function QuickEdit() {
 
   return (
     <div className={styles.page} dir="rtl">
+      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
       <header className={styles.header}>
         <h1>עדכון מהיר</h1>
       </header>
