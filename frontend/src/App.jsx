@@ -33,9 +33,11 @@ export default function App() {
 
   if (role === 'volunteer') {
     return (
-      <VolunteerLayout onLogout={handleLogout}>
-        <MapView isVolunteer />
-      </VolunteerLayout>
+      <BrowserRouter>
+        <VolunteerLayout onLogout={handleLogout}>
+          <MapView isVolunteer />
+        </VolunteerLayout>
+      </BrowserRouter>
     );
   }
 
