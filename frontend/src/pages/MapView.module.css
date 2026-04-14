@@ -4,6 +4,11 @@
   overflow: hidden;
 }
 
+/* When rendered inside VolunteerLayout, fill parent instead of viewport */
+.pageVolunteer {
+  height: 100%;
+}
+
 /* ── Map side (left, 60%) ── */
 .mapSide {
   flex: 0 0 60%;
@@ -85,6 +90,23 @@
 .filterBtn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
+
+.volunteerContactBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #25d366;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.volunteerContactBtn:hover { background: #1ebe5d; }
 
 .viewModeBtn {
   display: flex; align-items: center; gap: 5px;

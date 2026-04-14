@@ -36,7 +36,7 @@ function MapInvalidator({ fullscreen }) {
 const CLUSTER_RADIUS_PX = 30;
 
 // Clusters visible guitars by pixel proximity at the current zoom level
-function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, viewMode }) {
+function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, viewMode, isVolunteer }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
@@ -85,15 +85,17 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
           <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.popupWa}><WaIcon /></a>
         </div>
       )}
-      {!g.collected && (
+      {!isVolunteer && !g.collected && (
         <button className={styles.popupCollectBtn} onClick={() => markCollected(g.id)} disabled={marking === g.id}>
           {marking === g.id ? '...' : '✓ סמן כנאסף'}
         </button>
       )}
-      {g.collected && <div className={styles.collected}>✓ נאסף</div>}
-      <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
-        📋 פתח בטבלה
-      </button>
+      {!isVolunteer && g.collected && <div className={styles.collected}>✓ נאסף</div>}
+      {!isVolunteer && (
+        <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
+          📋 פתח בטבלה
+        </button>
+      )}
     </div>
   );
 
@@ -207,7 +209,9 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-export default function MapView() {
+const WA_MANAGER_CONTACT = `https://wa.me/972547274003?text=${encodeURIComponent('היי, אשמח להתנדב ולאסוף את הגיטרות של...')}`;
+
+export default function MapView({ isVolunteer = false }) {
   const navigate = useNavigate();
   const [guitars, setGuitars]       = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -244,7 +248,9 @@ export default function MapView() {
   }, []);
 
   const filters = ['הכל', 'נאסף', 'ממתין'];
-  const visible = filter === 'הכל' ? guitars
+  const visible = isVolunteer
+    ? guitars.filter(g => !g.collected)
+    : filter === 'הכל' ? guitars
     : filter === 'נאסף' ? guitars.filter(g => g.collected)
     : guitars.filter(g => !g.collected);
 
@@ -296,23 +302,25 @@ export default function MapView() {
   };
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${isVolunteer ? styles.pageVolunteer : ''}`}>
       {/* ── Left: Map ── */}
       <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
         <div className={styles.mapHeader}>
           <h1>מפת גיטרות</h1>
-          <div className={styles.filters}>
-            {filters.map(t => (
-              <button key={t}
-                className={`${styles.filterBtn} ${filter === t ? styles.active : ''}`}
-                onClick={() => setFilter(t)}
-                style={filter === t && t !== 'הכל'
-                  ? { background: t === 'נאסף' ? MARKER_COLOR.collected : MARKER_COLOR.pending, color: '#fff', borderColor: 'transparent' }
-                  : {}}
-              >{t}</button>
-            ))}
-          </div>
-          <span className={styles.count}>{visible.length} גיטרות</span>
+          {!isVolunteer && (
+            <div className={styles.filters}>
+              {filters.map(t => (
+                <button key={t}
+                  className={`${styles.filterBtn} ${filter === t ? styles.active : ''}`}
+                  onClick={() => setFilter(t)}
+                  style={filter === t && t !== 'הכל'
+                    ? { background: t === 'נאסף' ? MARKER_COLOR.collected : MARKER_COLOR.pending, color: '#fff', borderColor: 'transparent' }
+                    : {}}
+                >{t}</button>
+              ))}
+            </div>
+          )}
+          <span className={styles.count}>{visible.length} גיטרות ממתינות</span>
           <button
             className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
             onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}
@@ -321,6 +329,16 @@ export default function MapView() {
             {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
             {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
           </button>
+          {isVolunteer && (
+            <a
+              href={WA_MANAGER_CONTACT}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.volunteerContactBtn}
+            >
+              <WaIcon /> לאיסוף גיטרות פנה למנהל המיזם
+            </a>
+          )}
         </div>
 
         <div className={styles.mapWrapper}>
@@ -356,13 +374,14 @@ export default function MapView() {
                 markCollected={markCollected}
                 navigate={navigate}
                 viewMode={viewMode}
+                isVolunteer={isVolunteer}
               />
             </MapContainer>
           )}
         </div>
 
         <div className={styles.legend}>
-          <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>
+          {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>

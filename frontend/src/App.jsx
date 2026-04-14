@@ -7,13 +7,37 @@ import QuickEdit from './pages/QuickEdit';
 import TableView from './pages/TableView';
 import AddressReview from './pages/AddressReview';
 import Login from './pages/Login';
+import VolunteerLayout from './components/VolunteerLayout';
 
 export default function App() {
   const [authed, setAuthed] = useState(
     () => localStorage.getItem('echo_auth') === '1'
   );
+  const [role, setRole] = useState(
+    () => localStorage.getItem('echo_role') || 'admin'
+  );
 
-  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
+  const handleLogin = (r) => {
+    setAuthed(true);
+    setRole(r);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('echo_auth');
+    localStorage.removeItem('echo_role');
+    setAuthed(false);
+    setRole('admin');
+  };
+
+  if (!authed) return <Login onLogin={handleLogin} />;
+
+  if (role === 'volunteer') {
+    return (
+      <VolunteerLayout onLogout={handleLogout}>
+        <MapView isVolunteer />
+      </VolunteerLayout>
+    );
+  }
 
   return (
     <BrowserRouter>
