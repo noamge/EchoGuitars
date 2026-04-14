@@ -67,6 +67,16 @@ export default function Layout() {
 
         <div className={styles.sidebarFooter}>
           <p>גיטרה לכל ילד</p>
+          <button
+            className={styles.logoutBtn}
+            onClick={() => {
+              localStorage.removeItem('echo_auth');
+              localStorage.removeItem('echo_role');
+              window.location.reload();
+            }}
+          >
+            יציאה
+          </button>
         </div>
       </aside>
 
