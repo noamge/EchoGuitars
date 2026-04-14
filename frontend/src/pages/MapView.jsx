@@ -36,7 +36,7 @@ function MapInvalidator({ fullscreen }) {
 const CLUSTER_RADIUS_PX = 30;
 
 // Clusters visible guitars by pixel proximity at the current zoom level
-function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, viewMode, isVolunteer }) {
+function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected, navigate, viewMode, isVolunteer }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
@@ -102,11 +102,13 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
   if (viewMode === 'dots') {
     return visible.filter(g => g.lat && g.lon).map(g => {
       const isHighlighted = g.id === highlightedId;
+      const isNearby = nearbyIds.size > 0 && nearbyIds.has(g.id);
       return (
         <Marker
           key={g.id}
           position={[g.lat, g.lon]}
-          icon={makeGuitarIcon(isHighlighted, g.collected)}
+          icon={makeGuitarIcon(isHighlighted, g.collected, isNearby)}
+          zIndexOffset={isHighlighted ? 1000 : isNearby ? 500 : 0}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
         </Marker>
@@ -118,16 +120,19 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
     const g0 = group[0];
     const groupKey = `${g0.lat},${g0.lon}-${group.length}`;
     const isHighlighted = group.some(g => g.id === highlightedId);
+    const isNearby = nearbyIds.size > 0 && group.some(g => nearbyIds.has(g.id));
 
     if (group.length === 1) {
       const g = group[0];
+      const fillColor = isHighlighted ? '#4361ee' : isNearby ? '#7c3aed' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+      const radius = isHighlighted ? 14 : isNearby ? 11 : 8;
       return (
         <CircleMarker
           key={groupKey}
           center={[g.lat, g.lon]}
-          radius={isHighlighted ? 14 : 8}
-          fillColor={isHighlighted ? '#4361ee' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending)}
-          color="#fff" weight={isHighlighted ? 3 : 2} fillOpacity={isHighlighted ? 1 : 0.85}
+          radius={radius}
+          fillColor={fillColor}
+          color="#fff" weight={isHighlighted || isNearby ? 3 : 2} fillOpacity={isHighlighted || isNearby ? 1 : 0.85}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
         </CircleMarker>
@@ -135,7 +140,7 @@ function MapMarkers({ visible, highlightedId, marking, markCollected, navigate, 
     }
 
     const allCollected = group.every(g => g.collected);
-    const bg = isHighlighted ? '#4361ee' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+    const bg = isHighlighted ? '#4361ee' : isNearby ? '#7c3aed' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
     return (
       <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
         <Popup maxWidth={250}>
@@ -178,16 +183,17 @@ function makeGroupIcon(count, bg) {
   });
 }
 
-function makeGuitarIcon(highlighted, collected) {
-  const bg = highlighted ? '#4361ee' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
-  const size = highlighted ? 28 : 22;
-  const fontSize = highlighted ? 13 : 11;
+function makeGuitarIcon(highlighted, collected, isNearby = false) {
+  const bg = highlighted ? '#4361ee' : isNearby ? '#7c3aed' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+  const size = highlighted ? 28 : isNearby ? 26 : 22;
+  const fontSize = highlighted ? 13 : isNearby ? 12 : 11;
+  const ring = highlighted ? ',0 0 0 2.5px #4361ee88' : isNearby ? ',0 0 0 2.5px #7c3aed66' : '';
   return L.divIcon({
     html: `<div style="
       width:${size}px;height:${size}px;border-radius:50%;
       background:${bg};
       border:2px solid rgba(255,255,255,0.9);
-      box-shadow:0 1px 4px rgba(0,0,0,0.3)${highlighted ? ',0 0 0 2.5px #4361ee88' : ''};
+      box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring};
       display:flex;align-items:center;justify-content:center;
       font-size:${fontSize}px;line-height:1;
       user-select:none;
@@ -196,6 +202,21 @@ function makeGuitarIcon(highlighted, collected) {
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     popupAnchor: [0, -(size / 2 + 4)],
+  });
+}
+
+function makeLocationPin() {
+  return L.divIcon({
+    html: `<div style="position:relative;display:flex;justify-content:center;width:28px;height:36px;">
+      <svg width="28" height="36" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22S28 24.5 28 14C28 6.268 21.732 0 14 0z" fill="#4361ee" stroke="white" stroke-width="2"/>
+        <circle cx="14" cy="14" r="5.5" fill="white"/>
+      </svg>
+    </div>`,
+    className: '',
+    iconSize: [28, 36],
+    iconAnchor: [14, 36],
+    popupAnchor: [0, -36],
   });
 }
 
@@ -246,6 +267,8 @@ export default function MapView({ isVolunteer = false }) {
       setMarking(null);
     }
   }, []);
+
+  const nearbyIds = useMemo(() => new Set(nearby.map(g => g.id)), [nearby]);
 
   const filters = ['הכל', 'נאסף', 'ממתין'];
   const visible = isVolunteer
@@ -355,16 +378,18 @@ export default function MapView({ isVolunteer = false }) {
               <MapInvalidator fullscreen={mapFullscreen} />
               <FlyTo target={guitars.find(g => g.id === highlightedId) || null} />
               {userLocation && (
-                <CircleMarker
-                  center={[userLocation.lat, userLocation.lon]}
-                  radius={10} fillColor="#4361ee" color="#fff" weight={3} fillOpacity={1}
+                <Marker
+                  position={[userLocation.lat, userLocation.lon]}
+                  icon={makeLocationPin()}
+                  zIndexOffset={2000}
                 >
                   <Popup>המיקום שלך</Popup>
-                </CircleMarker>
+                </Marker>
               )}
               <MapMarkers
                 visible={visible}
                 highlightedId={highlightedId}
+                nearbyIds={nearbyIds}
                 marking={marking}
                 markCollected={markCollected}
                 navigate={navigate}
@@ -378,21 +403,22 @@ export default function MapView({ isVolunteer = false }) {
         <div className={styles.legend}>
           {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
+          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#7c3aed'}}/> טופ 10</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
-      </div>
 
-      {/* ── WhatsApp FAB (volunteer): below map, above nearby list ── */}
-      {isVolunteer && (
-        <a
-          href={WA_MANAGER_CONTACT}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.volunteerFab}
-        >
-          <WaIcon /> פנה למנהל לאיסוף גיטרות
-        </a>
-      )}
+        {/* FAB: below map, above the nearby panel — visible on both mobile and desktop */}
+        {isVolunteer && (
+          <a
+            href={WA_MANAGER_CONTACT}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.volunteerFab}
+          >
+            <WaIcon /> פנה למנהל לאיסוף גיטרות
+          </a>
+        )}
+      </div>
 
       {/* ── Right: Nearby Picker ── */}
       <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>

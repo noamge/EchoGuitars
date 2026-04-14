@@ -61,22 +61,9 @@
   .expandBtn {
     display: none;
   }
-  /* FAB: shown below map, full-width bar */
   .volunteerFab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     padding: 13px 16px;
-    background: #25d366;
-    color: #fff;
     font-size: 14px;
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(37,211,102,0.3);
-    transition: background 0.15s;
-    width: 100%;
   }
   .nearbyCard {
     padding: 8px 10px;
@@ -146,12 +133,23 @@
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
 .volunteerFab {
-  /* Hidden on desktop — only shown on mobile in the flow between map and nearby panel */
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: #25d366;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  border-top: 1px solid rgba(0,0,0,0.08);
 }
 .volunteerFab:hover {
   background: #1ebe5d;
-  box-shadow: 0 4px 14px rgba(37,211,102,0.5);
 }
 
 .viewModeBtn {
