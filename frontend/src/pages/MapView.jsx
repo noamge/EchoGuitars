@@ -359,6 +359,35 @@ export default function MapView({ isVolunteer = false }) {
           </button>
         </div>
 
+        {/* ── Volunteer: compact location row between header and map ── */}
+        {isVolunteer && (
+          <div className={styles.volunteerLocationRow}>
+            <button
+              className={styles.volunteerGpsBtn}
+              onClick={detectLocation}
+              disabled={locating || loading}
+              title="זהה מיקום אוטומטית"
+            >
+              {locating ? '…' : <Navigation size={13} />}
+            </button>
+            <input
+              className={styles.volunteerLocationInput}
+              placeholder="הזן איזור איסוף..."
+              value={manualInput}
+              onChange={e => setManualInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
+            />
+            <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
+              <Search size={13} />
+            </button>
+          </div>
+        )}
+        {isVolunteer && resolvedAddress && (
+          <div className={styles.resolvedAddress}>
+            <Navigation size={12} /> {resolvedAddress}
+          </div>
+        )}
+
         <div className={styles.mapWrapper}>
           <button
             className={styles.fullscreenBtn}
@@ -430,26 +459,28 @@ export default function MapView({ isVolunteer = false }) {
           </button>
         </div>
 
-        <div className={styles.locationControls}>
-          <button className={styles.detectBtn} onClick={detectLocation} disabled={locating || loading}>
-            <Navigation size={15} />
-            {locating ? 'מאתר...' : 'זהה מיקום אוטומטית'}
-          </button>
-          <div className={styles.manualRow}>
-            <input
-              className={styles.manualInput}
-              placeholder="או הזן עיר / כתובת..."
-              value={manualInput}
-              onChange={e => setManualInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
-            />
-            <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
-              <Search size={15} />
+        {!isVolunteer && (
+          <div className={styles.locationControls}>
+            <button className={styles.detectBtn} onClick={detectLocation} disabled={locating || loading}>
+              <Navigation size={15} />
+              {locating ? 'מאתר...' : 'זהה מיקום אוטומטית'}
             </button>
+            <div className={styles.manualRow}>
+              <input
+                className={styles.manualInput}
+                placeholder="או הזן עיר / כתובת..."
+                value={manualInput}
+                onChange={e => setManualInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
+              />
+              <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
+                <Search size={15} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {resolvedAddress && (
+        {!isVolunteer && resolvedAddress && (
           <div className={styles.resolvedAddress}>
             <Navigation size={13} /> {resolvedAddress}
           </div>

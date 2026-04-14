@@ -162,6 +162,46 @@
 .viewModeBtn:hover { border-color: var(--primary-light); color: var(--primary); }
 .viewModeBtnActive { background: var(--primary); color: #fff; border-color: var(--primary); }
 
+.volunteerLocationRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.volunteerGpsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 12px;
+  transition: opacity 0.15s;
+}
+.volunteerGpsBtn:disabled { opacity: 0.5; cursor: default; }
+.volunteerGpsBtn:not(:disabled):hover { background: var(--primary-dark); }
+
+.volunteerLocationInput {
+  flex: 1;
+  padding: 5px 9px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: inherit;
+  direction: rtl;
+  min-width: 0;
+}
+.volunteerLocationInput:focus { outline: none; border-color: var(--primary-light); }
+
 .mapWrapper { flex: 1; overflow: hidden; position: relative; }
 .map { height: 100%; width: 100%; }
 
