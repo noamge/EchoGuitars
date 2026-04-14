@@ -305,8 +305,8 @@ export default function MapView({ isVolunteer = false }) {
     <div className={`${styles.page} ${isVolunteer ? styles.pageVolunteer : ''}`}>
       {/* ── Left: Map ── */}
       <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
-        <div className={styles.mapHeader}>
-          <h1>מפת גיטרות</h1>
+        <div className={`${styles.mapHeader} ${isVolunteer ? styles.mapHeaderVolunteer : ''}`}>
+          {!isVolunteer && <h1>מפת גיטרות</h1>}
           {!isVolunteer && (
             <div className={styles.filters}>
               {filters.map(t => (
@@ -320,7 +320,12 @@ export default function MapView({ isVolunteer = false }) {
               ))}
             </div>
           )}
-          <span className={styles.count}>{visible.length} גיטרות ממתינות</span>
+          {isVolunteer && (
+            <span className={styles.volunteerCount}>
+              <span className={styles.volunteerCountNum}>{visible.length}</span> גיטרות ממתינות לאיסוף
+            </span>
+          )}
+          {!isVolunteer && <span className={styles.count}>{visible.length} גיטרות</span>}
           <button
             className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
             onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}
@@ -329,19 +334,19 @@ export default function MapView({ isVolunteer = false }) {
             {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
             {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
           </button>
+        </div>
+
+        <div className={styles.mapWrapper}>
           {isVolunteer && (
             <a
               href={WA_MANAGER_CONTACT}
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.volunteerContactBtn}
+              className={styles.volunteerFab}
             >
-              <WaIcon /> לאיסוף גיטרות פנה למנהל המיזם
+              <WaIcon /> פנה למנהל לאיסוף גיטרות
             </a>
           )}
-        </div>
-
-        <div className={styles.mapWrapper}>
           <button
             className={styles.fullscreenBtn}
             onClick={() => setMapFullscreen(f => !f)}

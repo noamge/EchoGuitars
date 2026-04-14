@@ -24,13 +24,13 @@
     height: 100dvh;
   }
   .mapSide {
-    flex: 0 0 45%;
+    flex: 0 0 38%;
     border-left: none;
     border-bottom: 1px solid var(--border);
     transition: flex 0.3s ease;
   }
   .mapSideCollapsed {
-    flex: 0 0 20% !important;
+    flex: 0 0 18% !important;
   }
   .nearbySide {
     flex: 1;
@@ -41,7 +41,7 @@
     flex-direction: column;
   }
   .nearbySideExpanded {
-    flex: 0 0 80% !important;
+    flex: 0 0 82% !important;
   }
   .nearbyList {
     max-height: none;
@@ -52,6 +52,18 @@
   .expandBtn {
     display: flex;
   }
+  .nearbyCard {
+    padding: 8px 10px;
+  }
+  .nearbyRank {
+    font-size: 15px;
+    width: 22px;
+  }
+  .nearbyName { font-size: 13px; }
+  .nearbyAddress { font-size: 11px; }
+  .nearbyPhone { font-size: 11px; }
+  .nearbyDist { font-size: 12px; }
+  .nearbyInfo { gap: 2px; }
 }
 
 .expandBtn {
@@ -79,6 +91,22 @@
 
 .mapHeader h1 { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
 
+.mapHeaderVolunteer {
+  padding: 10px 16px;
+  gap: 10px;
+}
+
+.volunteerCount {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-right: auto;
+}
+.volunteerCountNum {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
 .filters { display: flex; gap: 6px; }
 .filterBtn {
   padding: 5px 14px; border-radius: 16px;
@@ -91,22 +119,30 @@
 
 .count { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
-.volunteerContactBtn {
+.volunteerFab {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  gap: 8px;
+  padding: 11px 22px;
   background: #25d366;
   color: #fff;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 28px;
+  font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.15s;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.45);
+  transition: background 0.15s, box-shadow 0.15s;
 }
-.volunteerContactBtn:hover { background: #1ebe5d; }
+.volunteerFab:hover {
+  background: #1ebe5d;
+  box-shadow: 0 6px 20px rgba(37,211,102,0.55);
+}
 
 .viewModeBtn {
   display: flex; align-items: center; gap: 5px;

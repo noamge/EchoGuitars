@@ -5,9 +5,9 @@ export default function VolunteerLayout({ children, onLogout }) {
     <div className={styles.shell}>
       <header className={styles.topBar}>
         <div className={styles.logo}>
-          <span>🎸</span>
-          <span>EchoGuitars</span>
-          <span className={styles.badge}>מתנדב</span>
+          <span className={styles.logoIcon}>🎸</span>
+          <span className={styles.logoText}>EchoGuitars</span>
+          <span className={styles.badge}>מתנדב לאיסוף</span>
         </div>
         <button className={styles.logoutBtn} onClick={onLogout}>
           יציאה
