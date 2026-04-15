@@ -8,6 +8,10 @@ function useMock() {
   return !process.env.GOOGLE_SHEET_ID;
 }
 
+// In-memory set of guitar IDs whose address was manually confirmed via the UI.
+// Persists within the current server process (cleared on redeploy).
+const addressVerifiedIds = new Set();
+
 async function fetchGuitars() {
   if (useMock()) {
     console.log('⚠️  MOCK MODE active');
@@ -160,17 +164,20 @@ router.get('/address-issues', async (req, res) => {
     // Original: no city at all
     const missingCity = guitars.filter(g => !g.city || !g.city.trim());
 
-    // New: has city + street but Google returned a city-level result (street not found)
+    // Has city + street but Google returned a city-level result (street not found)
     const withStreet = guitars.filter(g => g.city && g.city.trim() && g.street && g.street.trim());
     const geocodeResults = await Promise.all(
       withStreet.map(g => geocodeAddress(g.street, g.city))
     );
-    const impreciseStreet = withStreet.filter((_, i) => geocodeResults[i]?.cityOnly === true);
+    const impreciseStreet = withStreet.filter((_, i) =>
+      geocodeResults[i]?.cityOnly === true && !addressVerifiedIds.has(withStreet[i].id)
+    );
     const impreciseIds = new Set(impreciseStreet.map(g => g.id));
     const missingCityIds = new Set(missingCity.map(g => g.id));
 
+    // Exclude manually-verified guitars from missingCity too
     const issues = [
-      ...missingCity,
+      ...missingCity.filter(g => !addressVerifiedIds.has(g.id)),
       ...impreciseStreet.filter(g => !missingCityIds.has(g.id)),
     ];
 
@@ -214,23 +221,28 @@ router.patch('/:id/city', async (req, res) => {
   if (!city) return res.status(400).json({ error: 'city is required' });
   try {
     if (useMock()) {
+      addressVerifiedIds.add(id);
       return res.json({ id, city, street, precise: true });
     }
     // Update column D (city) and optionally E (street)
     const { findAndUpdateCity } = require('../services/sheetsService');
     const result = await findAndUpdateCity(id, city, street);
     clearGeocodeCache();
+    addressVerifiedIds.add(id); // remember this address was manually confirmed
 
-    // Verify precision using the same geocoding logic as /address-issues,
-    // so the frontend save-confirmation matches what the list will show on refresh.
+    // Verify precision using the same geocoding logic as /address-issues.
+    // Wrapped in try/catch so a geocoding failure never breaks the save response.
     let precise = false;
-    const processedStreet = suggestStreet(city, street || '', city) || (street || '');
-    if (!processedStreet.trim()) {
-      // No street — city-level is fine (won't appear in impreciseStreet filter)
-      precise = true;
-    } else {
-      const coords = await geocodeAddress(processedStreet, city);
-      precise = !!coords && !coords.cityOnly;
+    try {
+      const processedStreet = suggestStreet(city, street || '', city) || (street || '');
+      if (!processedStreet.trim()) {
+        precise = true; // no street → city-level is acceptable
+      } else {
+        const coords = await geocodeAddress(processedStreet, city);
+        precise = !!coords && !coords.cityOnly;
+      }
+    } catch (geocodeErr) {
+      console.error('Post-save geocode check failed (non-fatal):', geocodeErr.message);
     }
 
     res.json({ ...result, precise });
