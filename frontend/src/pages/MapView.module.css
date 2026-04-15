@@ -451,8 +451,8 @@
   border-radius: 0 0 16px 16px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   direction: rtl;
-  max-width: 92vw;
-  white-space: nowrap;
+  max-width: 88vw;
+  text-align: center;
   pointer-events: none;
 }
 .toastVisible {

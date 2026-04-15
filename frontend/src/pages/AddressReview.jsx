@@ -9,7 +9,12 @@ export default function AddressReview() {
   const [streetEdits, setStreetEdits] = useState({});
   const [saved, setSaved]             = useState({});
   const [saving, setSaving]           = useState({});
-  const [skipped, setSkipped]         = useState({});
+  const [skipped, setSkipped] = useState(() => {
+    try {
+      const stored = localStorage.getItem('address_review_skipped');
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
   const [search, setSearch]           = useState('');
   const [suggestions, setSuggestions] = useState({});   // id → { city, street, formattedAddress } | 'loading' | 'none'
 
@@ -168,7 +173,11 @@ export default function AddressReview() {
                   </button>
                   <button
                     className={styles.skipBtn}
-                    onClick={() => setSkipped(s => ({ ...s, [g.id]: true }))}
+                    onClick={() => setSkipped(s => {
+                      const next = { ...s, [g.id]: true };
+                      try { localStorage.setItem('address_review_skipped', JSON.stringify(next)); } catch {}
+                      return next;
+                    })}
                   >
                     דלג
                   </button>

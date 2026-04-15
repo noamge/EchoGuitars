@@ -34,7 +34,11 @@ async function geocodeAddress(street, city) {
 
     if (res.data.status === 'OK' && res.data.results.length > 0) {
       const { lat, lng } = res.data.results[0].geometry.location;
-      const result = { lat, lon: lng, cityOnly: !street };
+      const locationType = res.data.results[0].geometry.location_type;
+      const preciseTypes = ['ROOFTOP', 'RANGE_INTERPOLATED'];
+      // cityOnly = no street provided, OR Google returned a city/area-level result (couldn't find the street)
+      const cityOnly = !street || !preciseTypes.includes(locationType);
+      const result = { lat, lon: lng, cityOnly };
       cache.set(query, result);
       return result;
     }
