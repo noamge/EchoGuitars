@@ -110,18 +110,30 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
     </div>
   );
 
-  if (viewMode === 'dots') {
-    return visible.filter(g => g.lat && g.lon).map(g => {
-      const isHighlighted = g.id === highlightedId;
-      const isNearby = nearbyIds.size > 0 && nearbyIds.has(g.id);
+  if (viewMode === 'dots' || isVolunteer) {
+    // Group by exact lat/lon so stacked guitars show a badge instead of hiding each other
+    const groups = {};
+    visible.filter(g => g.lat && g.lon).forEach(g => {
+      const key = `${g.lat},${g.lon}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(g);
+    });
+    return Object.entries(groups).map(([key, group]) => {
+      const g0 = group[0];
+      const isHighlighted = group.some(g => g.id === highlightedId);
+      const isNearby = nearbyIds.size > 0 && group.some(g => nearbyIds.has(g.id));
       return (
         <Marker
-          key={g.id}
-          position={[g.lat, g.lon]}
-          icon={makeGuitarIcon(isHighlighted, g.collected, isNearby)}
+          key={key}
+          position={[g0.lat, g0.lon]}
+          icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length)}
           zIndexOffset={isHighlighted ? 1000 : isNearby ? 500 : 0}
         >
-          <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
+          <Popup maxWidth={250}>
+            <div className={styles.popup}>
+              {group.map((g, i) => guitarPopupItem(g, i > 0))}
+            </div>
+          </Popup>
         </Marker>
       );
     });
@@ -194,21 +206,26 @@ function makeGroupIcon(count, bg) {
   });
 }
 
-function makeGuitarIcon(highlighted, collected, isNearby = false) {
+function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1) {
   const bg = highlighted ? '#4361ee' : isNearby ? '#7c3aed' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
   const size = highlighted ? 28 : isNearby ? 26 : 22;
   const fontSize = highlighted ? 13 : isNearby ? 12 : 11;
   const ring = highlighted ? ',0 0 0 2.5px #4361ee88' : isNearby ? ',0 0 0 2.5px #7c3aed66' : '';
+  const badge = count > 1
+    ? `<div style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);padding:0 2px;">${count}</div>`
+    : '';
   return L.divIcon({
-    html: `<div style="
-      width:${size}px;height:${size}px;border-radius:50%;
-      background:${bg};
-      border:2px solid rgba(255,255,255,0.9);
-      box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring};
-      display:flex;align-items:center;justify-content:center;
-      font-size:${fontSize}px;line-height:1;
-      user-select:none;
-    ">🎸</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${bg};
+        border:2px solid rgba(255,255,255,0.9);
+        box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring};
+        display:flex;align-items:center;justify-content:center;
+        font-size:${fontSize}px;line-height:1;
+        user-select:none;
+      ">🎸</div>${badge}
+    </div>`,
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -387,14 +404,16 @@ export default function MapView({ isVolunteer = false }) {
               <span className={styles.volunteerCountNum}>{visible.length}</span> גיטרות ממתינות לאיסוף
             </span>
           )}
-          <button
-            className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
-            onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}
-            title={viewMode === 'cluster' ? 'עבור לתצוגת נקודות' : 'עבור לתצוגת קיבוץ'}
-          >
-            {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
-            {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
-          </button>
+          {!isVolunteer && (
+            <button
+              className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
+              onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}
+              title={viewMode === 'cluster' ? 'עבור לתצוגת נקודות' : 'עבור לתצוגת קיבוץ'}
+            >
+              {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
+              {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
+            </button>
+          )}
         </div>
 
         {/* ── Volunteer: compact location row between header and map ── */}
