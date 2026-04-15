@@ -259,6 +259,13 @@ export default function MapView({ isVolunteer = false }) {
   const [highlightedId, setHighlightedId] = useState(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState('cluster'); // 'cluster' | 'dots'
+  const [showToast, setShowToast] = useState(isVolunteer);
+
+  useEffect(() => {
+    if (!isVolunteer) return;
+    const t = setTimeout(() => setShowToast(false), 6000);
+    return () => clearTimeout(t);
+  }, [isVolunteer]);
 
   useEffect(() => {
     getGuitarsForMap()
@@ -346,10 +353,22 @@ export default function MapView({ isVolunteer = false }) {
 
   return (
     <div className={`${styles.page} ${isVolunteer ? styles.pageVolunteer : ''}`}>
+      {/* ── Volunteer: loading toast ── */}
+      {isVolunteer && (
+        <div className={`${styles.toast} ${showToast ? styles.toastVisible : styles.toastHidden}`}>
+          <span className={styles.toastIcon}>⏳</span>
+          בפתיחה ראשונה הנתונים עשויים להיטען לאחר מספר שניות – נא להמתין
+          <button className={styles.toastClose} onClick={() => setShowToast(false)}>✕</button>
+        </div>
+      )}
       {/* ── Left: Map ── */}
       <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
         <div className={`${styles.mapHeader} ${isVolunteer ? styles.mapHeaderVolunteer : ''}`}>
-          {!isVolunteer && <h1>מפת גיטרות</h1>}
+          {!isVolunteer && (
+            <span className={styles.adminCount}>
+              <span className={styles.adminCountNum}>{visible.length}</span> גיטרות
+            </span>
+          )}
           {!isVolunteer && (
             <div className={styles.filters}>
               {filters.map(t => (
@@ -368,7 +387,6 @@ export default function MapView({ isVolunteer = false }) {
               <span className={styles.volunteerCountNum}>{visible.length}</span> גיטרות ממתינות לאיסוף
             </span>
           )}
-          {!isVolunteer && <span className={styles.count}>{visible.length} גיטרות</span>}
           <button
             className={`${styles.viewModeBtn} ${viewMode === 'dots' ? styles.viewModeBtnActive : ''}`}
             onClick={() => setViewMode(m => m === 'cluster' ? 'dots' : 'cluster')}

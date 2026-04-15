@@ -85,9 +85,13 @@ export default function Layout() {
         {/* Hamburger button inside main, so it doesn't cover content */}
         <div className={styles.topBar}>
           <button className={styles.menuBtn} onClick={() => setOpen(true)}>
-            <Menu size={22} />
-            <span>תפריט</span>
+            <Menu size={20} />
           </button>
+          <div className={styles.topBarLogo}>
+            <span className={styles.topBarLogoIcon}>🎸</span>
+            <span className={styles.topBarLogoText}>EchoGuitars</span>
+            <span className={styles.topBarBadge}>מנהל</span>
+          </div>
         </div>
         <div className={styles.content}>
           <Outlet />
