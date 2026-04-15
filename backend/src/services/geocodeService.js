@@ -8,6 +8,13 @@ function getApiKey() {
   return process.env.GOOGLE_MAPS_API_KEY;
 }
 
+// Normalize common Hebrew spelling variations so the Geocoding API gets canonical names.
+// Example: "קרית טבעון" → "קריית טבעון" (the API is stricter than the Maps UI).
+function normalizeCity(city) {
+  // "קרית X" (informal, without yod) → "קריית X" (official spelling with yod)
+  return city.replace(/\bקרית\s/g, 'קריית ');
+}
+
 // Extract a specific component type from Google's address_components
 function extractComponent(components, type) {
   const comp = components.find(c => c.types.includes(type));
@@ -23,7 +30,7 @@ async function geocodeAddress(street, city) {
   const apiKey = getApiKey();
   if (!apiKey) return null;
 
-  const query = [street, city, 'ישראל'].filter(Boolean).join(', ');
+  const query = [street, normalizeCity(city), 'ישראל'].filter(Boolean).join(', ');
   if (cache.has(query)) return cache.get(query);
 
   try {
@@ -73,7 +80,7 @@ async function suggestAddress(rawText) {
   const apiKey = getApiKey();
   if (!apiKey) return null;
 
-  const query = rawText.trim() + ', ישראל';
+  const query = normalizeCity(rawText.trim()) + ', ישראל';
   const cacheKey = 'suggest:' + query;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
