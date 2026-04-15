@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getGuitars, updateGuitar } from '../api/client';
+import { getGuitars, updateGuitar, deleteGuitar } from '../api/client';
 import styles from './TableView.module.css';
 
 function toWhatsApp(phone) {
@@ -62,6 +62,7 @@ export default function TableView() {
   const [sortKey, setSortKey] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [marking, setMarking] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
@@ -118,6 +119,19 @@ export default function TableView() {
     }
   };
 
+  const handleDelete = async (g) => {
+    if (!window.confirm(`למחוק את הרשומה של ${g.name}?\nהפעולה תמחק את השורה מגוגל שיטס ולא ניתן לשחזר.`)) return;
+    setDeleting(g.id);
+    try {
+      await deleteGuitar(g.id);
+      setGuitars(prev => prev.filter(r => r.id !== g.id));
+    } catch (err) {
+      alert('שגיאה במחיקה: ' + err.message);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   const clearFilter = () => setSearchParams({});
 
   return (
@@ -162,7 +176,7 @@ export default function TableView() {
                       : ' ⇅'}
                   </th>
                 ))}
-                <th style={{ width: 90, minWidth: 90 }}>פעולה</th>
+                <th style={{ width: 110, minWidth: 110 }}>פעולה</th>
               </tr>
             </thead>
             <tbody>
@@ -174,15 +188,25 @@ export default function TableView() {
                     </td>
                   ))}
                   <td>
-                    {!g.collected && (
+                    <div className={styles.actionCell}>
+                      {!g.collected && (
+                        <button
+                          className={styles.collectBtn}
+                          onClick={() => markCollected(g.id)}
+                          disabled={marking === g.id}
+                        >
+                          {marking === g.id ? '...' : '✓ נאסף'}
+                        </button>
+                      )}
                       <button
-                        className={styles.collectBtn}
-                        onClick={() => markCollected(g.id)}
-                        disabled={marking === g.id}
+                        className={styles.deleteBtn}
+                        onClick={() => handleDelete(g)}
+                        disabled={deleting === g.id}
+                        title="מחק רשומה"
                       >
-                        {marking === g.id ? '...' : '✓ נאסף'}
+                        {deleting === g.id ? '...' : '🗑'}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}

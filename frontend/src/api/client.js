@@ -69,3 +69,6 @@ export const getAllGuitarsForSelect = () =>
 
 export const addGuitar = (data) =>
   api.post('/guitars', data).then(r => r.data);
+
+export const deleteGuitar = (id) =>
+  api.delete(`/guitars/${id}`).then(r => r.data);

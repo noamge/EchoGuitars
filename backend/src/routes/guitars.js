@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -236,6 +236,22 @@ router.get('/:id', async (req, res) => {
     if (!guitar) return res.status(404).json({ error: 'Not found' });
     res.json(guitar);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/guitars/:id — permanently delete a row from the sheet
+router.delete('/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+  try {
+    if (useMock()) {
+      return res.json({ id, deleted: true });
+    }
+    const result = await deleteGuitarRow(id);
+    res.json(result);
+  } catch (err) {
+    console.error('delete error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

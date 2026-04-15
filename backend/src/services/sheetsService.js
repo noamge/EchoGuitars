@@ -403,6 +403,42 @@ async function addGuitar(data) {
   return rowToGuitar(row, newRowIndex);
 }
 
+// ── Delete a guitar row by stable ID ─────────────────────────────────────────
+async function deleteGuitarRow(stableId) {
+  const sheets = getSheetsClient();
+
+  // Find physical row by stable ID
+  const rowIndex = await findRowByStableId(stableId);
+  if (!rowIndex) throw new Error(`Guitar with ID ${stableId} not found`);
+
+  // Get the internal sheetId for the tab (needed for deleteDimension)
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    fields: 'sheets.properties',
+  });
+  const sheetMeta = meta.data.sheets.find(s => s.properties.title === SHEET_TAB);
+  const sheetId = sheetMeta ? sheetMeta.properties.sheetId : 0;
+
+  // Delete the physical row (rowIndex is 1-based; API expects 0-based startIndex)
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    requestBody: {
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId,
+            dimension: 'ROWS',
+            startIndex: rowIndex - 1,
+            endIndex: rowIndex,
+          },
+        },
+      }],
+    },
+  });
+
+  return { id: stableId, deleted: true };
+}
+
 module.exports = {
   getAllGuitars,
   getGuitarByName,
@@ -412,4 +448,5 @@ module.exports = {
   findAndUpdateCity,
   suggestStreet,
   addGuitar,
+  deleteGuitarRow,
 };
