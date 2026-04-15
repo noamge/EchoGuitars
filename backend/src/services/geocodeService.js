@@ -130,4 +130,8 @@ async function suggestAddress(rawText) {
   return null;
 }
 
-module.exports = { geocodeAddress, suggestAddress };
+function clearGeocodeCache() {
+  cache.clear();
+}
+
+module.exports = { geocodeAddress, suggestAddress, clearGeocodeCache };

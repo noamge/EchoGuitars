@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow } = require('../services/sheetsService');
-const { geocodeAddress, suggestAddress } = require('../services/geocodeService');
+const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
 function useMock() {
@@ -219,6 +219,7 @@ router.patch('/:id/city', async (req, res) => {
     // Update column D (city) and optionally E (street)
     const { findAndUpdateCity } = require('../services/sheetsService');
     const result = await findAndUpdateCity(id, city, street);
+    clearGeocodeCache();
     res.json(result);
   } catch (err) {
     console.error(err);
