@@ -151,11 +151,29 @@ router.get('/address-issues/count', async (req, res) => {
   }
 });
 
-// GET /api/guitars/address-issues — guitars where city could not be identified
+// GET /api/guitars/address-issues — guitars where city could not be identified,
+// OR where city is known but Google couldn't find the specific street (imprecise geocode)
 router.get('/address-issues', async (req, res) => {
   try {
     const guitars = await fetchGuitars();
-    const issues = guitars.filter(g => !g.city || !g.city.trim());
+
+    // Original: no city at all
+    const missingCity = guitars.filter(g => !g.city || !g.city.trim());
+
+    // New: has city + street but Google returned a city-level result (street not found)
+    const withStreet = guitars.filter(g => g.city && g.city.trim() && g.street && g.street.trim());
+    const geocodeResults = await Promise.all(
+      withStreet.map(g => geocodeAddress(g.street, g.city))
+    );
+    const impreciseStreet = withStreet.filter((_, i) => geocodeResults[i]?.cityOnly === true);
+    const impreciseIds = new Set(impreciseStreet.map(g => g.id));
+    const missingCityIds = new Set(missingCity.map(g => g.id));
+
+    const issues = [
+      ...missingCity,
+      ...impreciseStreet.filter(g => !missingCityIds.has(g.id)),
+    ];
+
     res.json(issues.map(g => ({
       id: g.id,
       rowIndex: g.rowIndex,
@@ -167,6 +185,7 @@ router.get('/address-issues', async (req, res) => {
       region: g.region,
       guitarType: g.guitarType,
       collected: g.collected,
+      impreciseStreet: impreciseIds.has(g.id),
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });

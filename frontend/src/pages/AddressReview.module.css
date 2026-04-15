@@ -33,10 +33,11 @@
   gap: 10px;
 }
 
-.cardTop { display: flex; align-items: center; gap: 8px; }
+.cardTop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .name { font-weight: 600; font-size: 15px; }
 .idBadge { background: #e5e7eb; color: #374151; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
 .typeBadge { background: #d1fae5; color: #065f46; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.impreciseBadge { background: #fef3c7; color: #92400e; font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid #fcd34d; }
 
 .rawFields { display: flex; flex-direction: column; gap: 4px; background: #f9fafb; border-radius: 6px; padding: 8px 12px; }
 .rawRow { display: flex; gap: 8px; align-items: baseline; }

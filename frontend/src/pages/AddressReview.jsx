@@ -111,6 +111,9 @@ export default function AddressReview() {
                 <span className={styles.name}>{g.name}</span>
                 <span className={styles.idBadge}>#{g.id}</span>
                 {g.guitarType && <span className={styles.typeBadge}>{g.guitarType}</span>}
+                {g.impreciseStreet && (
+                  <span className={styles.impreciseBadge}>רחוב לא נמצא ב-Google</span>
+                )}
               </div>
 
               <div className={styles.rawFields}>
