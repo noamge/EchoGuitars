@@ -214,13 +214,26 @@ router.patch('/:id/city', async (req, res) => {
   if (!city) return res.status(400).json({ error: 'city is required' });
   try {
     if (useMock()) {
-      return res.json({ id, city, street });
+      return res.json({ id, city, street, precise: true });
     }
     // Update column D (city) and optionally E (street)
     const { findAndUpdateCity } = require('../services/sheetsService');
     const result = await findAndUpdateCity(id, city, street);
     clearGeocodeCache();
-    res.json(result);
+
+    // Verify precision using the same geocoding logic as /address-issues,
+    // so the frontend save-confirmation matches what the list will show on refresh.
+    let precise = false;
+    const processedStreet = suggestStreet(city, street || '', city) || (street || '');
+    if (!processedStreet.trim()) {
+      // No street — city-level is fine (won't appear in impreciseStreet filter)
+      precise = true;
+    } else {
+      const coords = await geocodeAddress(processedStreet, city);
+      precise = !!coords && !coords.cityOnly;
+    }
+
+    res.json({ ...result, precise });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

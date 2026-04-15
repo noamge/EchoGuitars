@@ -54,29 +54,14 @@ export default function AddressReview() {
     setSaving(s => ({ ...s, [g.id]: true }));
     setSaveWarning(s => ({ ...s, [g.id]: null }));
     try {
-      // 1. Save to Google Sheets
-      await updateGuitarCity(g.id, city, street);
+      // Save to Google Sheets — backend also geocodes and returns precise flag
+      const result = await updateGuitarCity(g.id, city, street);
 
-      // 2. Re-validate with Google to check if address is now precise
-      const query = street ? `${city} ${street}` : city;
-      let precise = false;
-      try {
-        const result = await validateAddress(query);
-        // Precise = Google returned a specific street-level result
-        // If guitar has a street, we need Google to confirm it; city-only is not enough
-        if (result?.precise) {
-          precise = true;
-        } else if (result?.city && !street) {
-          // No street was provided — city-level is acceptable
-          precise = true;
-        }
-      } catch { /* network error — assume imprecise */ }
-
-      if (precise) {
-        // Google confirmed → move to done
+      if (result?.precise) {
+        // Backend confirmed address is geocodable → move to done
         setSaved(s => ({ ...s, [g.id]: true }));
       } else {
-        // Saved to DB but Google still can't find it precisely
+        // Saved to DB but Google still can't place it precisely on the map
         const msg = street
           ? 'נשמר, אך Google עדיין לא מצא את הרחוב במדויק — הגיטרה תישאר כאן עד שהכתובת תאומת'
           : 'נשמר, אך Google לא הצליח לאמת את העיר — הגיטרה תישאר כאן';
