@@ -7,8 +7,9 @@ export default function AddressReview() {
   const [loading, setLoading]         = useState(true);
   const [cityEdits, setCityEdits]     = useState({});
   const [streetEdits, setStreetEdits] = useState({});
-  const [saved, setSaved]             = useState({});
+  const [saved, setSaved]             = useState({});   // id → true (Google confirmed precise)
   const [saving, setSaving]           = useState({});
+  const [saveWarning, setSaveWarning] = useState({});   // id → warning message after save
   const [skipped, setSkipped] = useState(() => {
     try {
       const stored = localStorage.getItem('address_review_skipped');
@@ -16,7 +17,7 @@ export default function AddressReview() {
     } catch { return {}; }
   });
   const [search, setSearch]           = useState('');
-  const [suggestions, setSuggestions] = useState({});   // id → { city, street, formattedAddress } | 'loading' | 'none'
+  const [suggestions, setSuggestions] = useState({});   // id → { city, street, ... } | 'loading' | 'none'
 
   useEffect(() => {
     getAddressIssues().then(data => {
@@ -51,9 +52,36 @@ export default function AddressReview() {
     const street = streetEdits[g.id]?.trim();
     if (!city) return;
     setSaving(s => ({ ...s, [g.id]: true }));
+    setSaveWarning(s => ({ ...s, [g.id]: null }));
     try {
+      // 1. Save to Google Sheets
       await updateGuitarCity(g.id, city, street);
-      setSaved(s => ({ ...s, [g.id]: true }));
+
+      // 2. Re-validate with Google to check if address is now precise
+      const query = street ? `${city} ${street}` : city;
+      let precise = false;
+      try {
+        const result = await validateAddress(query);
+        // Precise = Google returned a specific street-level result
+        // If guitar has a street, we need Google to confirm it; city-only is not enough
+        if (result?.precise) {
+          precise = true;
+        } else if (result?.city && !street) {
+          // No street was provided — city-level is acceptable
+          precise = true;
+        }
+      } catch { /* network error — assume imprecise */ }
+
+      if (precise) {
+        // Google confirmed → move to done
+        setSaved(s => ({ ...s, [g.id]: true }));
+      } else {
+        // Saved to DB but Google still can't find it precisely
+        const msg = street
+          ? 'נשמר, אך Google עדיין לא מצא את הרחוב במדויק — הגיטרה תישאר כאן עד שהכתובת תאומת'
+          : 'נשמר, אך Google לא הצליח לאמת את העיר — הגיטרה תישאר כאן';
+        setSaveWarning(s => ({ ...s, [g.id]: msg }));
+      }
     } catch (err) {
       alert('שגיאה בשמירה: ' + err.message);
     } finally {
@@ -64,8 +92,10 @@ export default function AddressReview() {
   const acceptSuggestion = (g) => {
     const s = suggestions[g.id];
     if (!s || s === 'loading' || s === 'none') return;
-    if (s.city)   setCityEdits(prev   => ({ ...prev,   [g.id]: s.city }));
-    if (s.street) setStreetEdits(prev => ({ ...prev,   [g.id]: s.street }));
+    if (s.city)   setCityEdits(prev   => ({ ...prev, [g.id]: s.city }));
+    if (s.street) setStreetEdits(prev => ({ ...prev, [g.id]: s.street }));
+    // Clear any previous warning since the user is editing again
+    setSaveWarning(s => ({ ...s, [g.id]: null }));
   };
 
   const pending  = issues.filter(g => !saved[g.id] && !skipped[g.id]);
@@ -105,13 +135,14 @@ export default function AddressReview() {
       <div className={styles.cardList}>
         {filtered.map(g => {
           const sugg = suggestions[g.id];
+          const warning = saveWarning[g.id];
           return (
             <div key={g.id} className={styles.card}>
               <div className={styles.cardTop}>
                 <span className={styles.name}>{g.name}</span>
                 <span className={styles.idBadge}>#{g.id}</span>
                 {g.guitarType && <span className={styles.typeBadge}>{g.guitarType}</span>}
-                {g.impreciseStreet && (
+                {g.impreciseStreet && !warning && (
                   <span className={styles.impreciseBadge}>רחוב לא נמצא ב-Google</span>
                 )}
               </div>
@@ -154,7 +185,10 @@ export default function AddressReview() {
                 <input
                   className={styles.addrInput}
                   value={cityEdits[g.id] || ''}
-                  onChange={e => setCityEdits(prev => ({ ...prev, [g.id]: e.target.value }))}
+                  onChange={e => {
+                    setCityEdits(prev => ({ ...prev, [g.id]: e.target.value }));
+                    setSaveWarning(s => ({ ...s, [g.id]: null }));
+                  }}
                   placeholder="שם עיר..."
                   onKeyDown={e => e.key === 'Enter' && handleSave(g)}
                 />
@@ -162,7 +196,10 @@ export default function AddressReview() {
                 <input
                   className={styles.addrInput}
                   value={streetEdits[g.id] || ''}
-                  onChange={e => setStreetEdits(prev => ({ ...prev, [g.id]: e.target.value }))}
+                  onChange={e => {
+                    setStreetEdits(prev => ({ ...prev, [g.id]: e.target.value }));
+                    setSaveWarning(s => ({ ...s, [g.id]: null }));
+                  }}
                   placeholder="שם רחוב + מספר..."
                   onKeyDown={e => e.key === 'Enter' && handleSave(g)}
                 />
@@ -172,7 +209,7 @@ export default function AddressReview() {
                     onClick={() => handleSave(g)}
                     disabled={!cityEdits[g.id]?.trim() || saving[g.id]}
                   >
-                    {saving[g.id] ? '...' : '✓ אשר'}
+                    {saving[g.id] ? 'בודק עם Google...' : '✓ אשר'}
                   </button>
                   <button
                     className={styles.skipBtn}
@@ -185,6 +222,9 @@ export default function AddressReview() {
                     דלג
                   </button>
                 </div>
+                {warning && (
+                  <div className={styles.saveWarning}>⚠️ {warning}</div>
+                )}
               </div>
             </div>
           );
@@ -192,7 +232,7 @@ export default function AddressReview() {
 
         {done.length > 0 && (
           <div className={styles.doneSection}>
-            <h3>✅ עודכנו ({done.length})</h3>
+            <h3>✅ עודכנו ואומתו ({done.length})</h3>
             {done.map(g => (
               <div key={g.id} className={styles.doneCard}>
                 <span className={styles.name}>{g.name}</span>

@@ -85,6 +85,8 @@ async function suggestAddress(rawText) {
         : null;
 
       const { lat, lng } = result.geometry.location;
+      const locationType = result.geometry.location_type;
+      const isPrecise = ['ROOFTOP', 'RANGE_INTERPOLATED'].includes(locationType);
 
       const suggestion = {
         city,
@@ -92,6 +94,7 @@ async function suggestAddress(rawText) {
         formattedAddress: result.formatted_address,
         lat,
         lon: lng,
+        precise: isPrecise,
       };
 
       cache.set(cacheKey, suggestion);
