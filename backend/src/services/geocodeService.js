@@ -35,9 +35,23 @@ async function geocodeAddress(street, city) {
     if (res.data.status === 'OK' && res.data.results.length > 0) {
       const { lat, lng } = res.data.results[0].geometry.location;
       const components = res.data.results[0].address_components;
-      // cityOnly = no street was queried, OR Google's result has no route component (street not found)
       const routeComponent = extractComponent(components, 'route');
       const cityOnly = !street || !routeComponent;
+
+      // Fallback: if Google didn't find the street and the input has a house number,
+      // retry with just the street name (no number). Handles cases like "ענב 203"
+      // where Google knows "ענב" but not the specific house number.
+      if (cityOnly && street && /\d/.test(street)) {
+        const streetNameOnly = street.replace(/\s*\d+.*$/, '').trim();
+        if (streetNameOnly && streetNameOnly !== street) {
+          const fallback = await geocodeAddress(streetNameOnly, city);
+          if (fallback && !fallback.cityOnly) {
+            cache.set(query, fallback);
+            return fallback;
+          }
+        }
+      }
+
       const result = { lat, lon: lng, cityOnly };
       cache.set(query, result);
       return result;
