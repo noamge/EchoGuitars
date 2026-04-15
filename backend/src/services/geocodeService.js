@@ -34,10 +34,10 @@ async function geocodeAddress(street, city) {
 
     if (res.data.status === 'OK' && res.data.results.length > 0) {
       const { lat, lng } = res.data.results[0].geometry.location;
-      const locationType = res.data.results[0].geometry.location_type;
-      const preciseTypes = ['ROOFTOP', 'RANGE_INTERPOLATED'];
-      // cityOnly = no street provided, OR Google returned a city/area-level result (couldn't find the street)
-      const cityOnly = !street || !preciseTypes.includes(locationType);
+      const components = res.data.results[0].address_components;
+      // cityOnly = no street was queried, OR Google's result has no route component (street not found)
+      const routeComponent = extractComponent(components, 'route');
+      const cityOnly = !street || !routeComponent;
       const result = { lat, lon: lng, cityOnly };
       cache.set(query, result);
       return result;
@@ -85,8 +85,9 @@ async function suggestAddress(rawText) {
         : null;
 
       const { lat, lng } = result.geometry.location;
-      const locationType = result.geometry.location_type;
-      const isPrecise = ['ROOFTOP', 'RANGE_INTERPOLATED'].includes(locationType);
+      // precise = Google found a specific street (route component exists)
+      // GEOMETRIC_CENTER of a street is good enough for map placement
+      const isPrecise = !!fullStreet;
 
       const suggestion = {
         city,
