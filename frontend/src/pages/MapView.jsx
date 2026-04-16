@@ -542,8 +542,8 @@ export default function MapView({ isVolunteer = false }) {
 
       </div>
 
-      {/* ── Right: Nearby Picker ── visible after location entered, or when map selections exist */}
-      {(!isVolunteer || userLocation || selectedIds.size > 0) && <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
+      {/* ── Right: Nearby Picker ── */}
+      <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
           <h2>המלצות לאיסוף בקרבתי</h2>
@@ -582,7 +582,7 @@ export default function MapView({ isVolunteer = false }) {
         {nearby.length === 0 && !userLocation && mapSelectedGuitars.length === 0 && (
           <div className={styles.emptyNearby}>
             <MapPin size={40} color="#d1d5db" />
-            <p>זהה מיקום כדי לראות<br/>את הגיטרות הקרובות אליך</p>
+            <p>כדי לראות גיטרות בקרבתך —<br/>הזן אזור איסוף למעלה</p>
           </div>
         )}
 
@@ -690,7 +690,7 @@ export default function MapView({ isVolunteer = false }) {
           </button>
         )}
 
-      </div>}
+      </div>
 
       {/* ── Floating "המשך" FAB — shown whenever selections exist (outside nearbySide so it's always visible) ── */}
       {isVolunteer && selectedIds.size > 0 && (
