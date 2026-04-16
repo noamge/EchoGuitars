@@ -277,6 +277,8 @@ export default function MapView({ isVolunteer = false }) {
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState('cluster'); // 'cluster' | 'dots'
   const [showToast, setShowToast] = useState(isVolunteer);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [nearbyLimit, setNearbyLimit] = useState(10);
 
   useEffect(() => {
     if (!isVolunteer) return;
@@ -303,7 +305,29 @@ export default function MapView({ isVolunteer = false }) {
     }
   }, []);
 
-  const nearbyIds = useMemo(() => new Set(nearby.map(g => g.id)), [nearby]);
+  const nearbyIds = useMemo(() => new Set(nearby.slice(0, nearbyLimit).map(g => g.id)), [nearby, nearbyLimit]);
+
+  // Clear selections and reset limit when a new area search is performed
+  useEffect(() => { setSelectedIds(new Set()); setNearbyLimit(10); }, [nearby]);
+
+  const toggleSelected = (id, e) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const buildCanCollectWaUrl = () => {
+    const selected = nearby.filter(g => selectedIds.has(g.id));
+    const lines = selected.map(g => {
+      const addr = [g.city, g.street].filter(Boolean).join(', ');
+      return [g.name, addr, g.phone].filter(Boolean).join(' | ');
+    }).join('\n');
+    const msg = `היי, אני יכול לאסוף את הגיטרות הבאות:\n${lines}`;
+    return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
+  };
 
   // Positions to fit in view after location search: user pin + all top-10 guitars
   const fitBoundsPositions = useMemo(() => {
@@ -329,7 +353,7 @@ export default function MapView({ isVolunteer = false }) {
       distance: haversine(lat, lon, g.lat, g.lon),
     }));
     withDist.sort((a, b) => a.distance - b.distance);
-    setNearby(withDist.slice(0, 10));
+    setNearby(withDist.slice(0, 15)); // store up to 15; display limited by nearbyLimit
     setUserLocation({ lat, lon });
   }, [guitars]);
 
@@ -574,10 +598,10 @@ export default function MapView({ isVolunteer = false }) {
                 </a>
               )}
             </div>
-            {nearby.map((g, i) => (
+            {nearby.slice(0, nearbyLimit).map((g, i) => (
               <div
                 key={g.id}
-                className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''}`}
+                className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isVolunteer && selectedIds.has(g.id) ? styles.nearbyCardSelected : ''}`}
                 onClick={() => setHighlightedId(g.id)}
                 style={{ cursor: 'pointer' }}
               >
@@ -596,9 +620,37 @@ export default function MapView({ isVolunteer = false }) {
                   {g.guitarType && <span className={styles.nearbyType}>{g.guitarType}</span>}
                 </div>
                 <div className={styles.nearbyDist}>{g.distance.toFixed(1)} ק"מ</div>
+                {isVolunteer && (
+                  <button
+                    className={`${styles.selectBtn} ${selectedIds.has(g.id) ? styles.selectBtnChecked : ''}`}
+                    onClick={e => toggleSelected(g.id, e)}
+                    title="סמן לאיסוף"
+                  >
+                    {selectedIds.has(g.id) ? '✓' : ''}
+                  </button>
+                )}
               </div>
             ))}
           </div>
+        )}
+        {nearby.length > nearbyLimit && (
+          <button
+            className={styles.expandListBtn}
+            onClick={() => setNearbyLimit(15)}
+          >
+            הרחב חיפוש — Top 15
+          </button>
+        )}
+
+        {isVolunteer && selectedIds.size > 0 && (
+          <a
+            href={buildCanCollectWaUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.canCollectBtn}
+          >
+            <WaIcon /> יכול לאסוף ({selectedIds.size})
+          </a>
         )}
       </div>
     </div>
