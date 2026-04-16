@@ -297,13 +297,13 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 5px 10px;
+  padding: 5px 9px;
   background: var(--primary-dark);
   color: #fff;
   border: none;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   font-family: inherit;
   white-space: nowrap;
@@ -430,9 +430,9 @@
 .waExportBtn:hover { background: #1ebe5d; }
 
 .nearbyCard {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: var(--bg-card); border-radius: 10px;
-  padding: 12px; border: 1.5px solid var(--border);
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--bg-card); border-radius: 8px;
+  padding: 8px 10px; border: 1.5px solid var(--border);
   transition: box-shadow 0.15s;
 }
 .nearbyCard:hover { box-shadow: var(--shadow-hover); }
@@ -442,18 +442,21 @@
   width: 28px; flex-shrink: 0; padding-top: 2px;
 }
 
-.nearbyInfo { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.nearbyInfo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .nearbyName { font-size: 14px; font-weight: 600; }
 .nearbyAddress { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
 .nearbyPhone { font-size: 13px; color: var(--primary); font-weight: 500; text-decoration: none; }
 .nearbyPhone:hover { text-decoration: underline; }
 .waBtn {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   color: #fff; text-decoration: none;
-  background: #25d366; padding: 3px; border-radius: 50%;
-  width: 22px; height: 22px; flex-shrink: 0;
+  background: #25d366; padding: 3px 8px 3px 5px; border-radius: 12px;
+  height: 22px; flex-shrink: 0;
 }
 .waBtn:hover { background: #1ebe5d; }
+.waBtnLabel {
+  font-size: 10px; font-weight: 600; white-space: nowrap;
+}
 .nearbyType {
   font-size: 11px; background: #eff6ff; color: #1e40af;
   padding: 2px 8px; border-radius: 10px; align-self: flex-start;

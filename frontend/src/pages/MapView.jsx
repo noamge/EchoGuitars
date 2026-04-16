@@ -470,7 +470,7 @@ export default function MapView({ isVolunteer = false }) {
                 title="זיהוי מיקום עצמי"
               >
                 <Navigation size={14} />
-                {locating ? '...' : 'GPS'}
+                {locating ? '...' : 'זהה מיקום עצמי'}
               </button>
             </div>
           </div>
@@ -528,7 +528,7 @@ export default function MapView({ isVolunteer = false }) {
         <div className={styles.legend}>
           {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
-          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> טופ 10</div>}
+          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> גיטרות בסביבתי</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
 
@@ -548,7 +548,7 @@ export default function MapView({ isVolunteer = false }) {
           <div className={styles.locationControls}>
             <button className={styles.detectBtn} onClick={detectLocation} disabled={locating || loading}>
               <Navigation size={15} />
-              {locating ? 'מאתר...' : 'זהה מיקום אוטומטית'}
+              {locating ? 'מאתר...' : 'זהה מיקום עצמי'}
             </button>
             <div className={styles.manualRow}>
               <input
@@ -616,12 +616,11 @@ export default function MapView({ isVolunteer = false }) {
                     <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
                   </div>
                   {g.phone && (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
-                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /></a>
+                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /><span className={styles.waBtnLabel}>לתיאום איסוף</span></a>
                     </div>
                   )}
-                  {g.guitarType && <span className={styles.nearbyType}>{g.guitarType}</span>}
                 </div>
                 <div className={styles.nearbyDist}>{g.distance.toFixed(1)} ק"מ</div>
                 {isVolunteer && (
