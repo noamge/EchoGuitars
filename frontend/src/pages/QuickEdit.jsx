@@ -99,10 +99,10 @@ function CollectMode() {
 
   const buildNotes = () => {
     const parts = [];
+    if (notes.trim())       parts.push(notes.trim());
     if (collector.trim())   parts.push(`אוסף: ${collector.trim()}`);
     if (destination.trim()) parts.push(`יעד: ${destination.trim()}`);
-    if (notes.trim())       parts.push(notes.trim());
-    return parts.join('\n');
+    return parts.join(' | ');
   };
 
   const handleSubmit = async (e) => {
