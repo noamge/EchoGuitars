@@ -186,7 +186,7 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
 }
 
 const WA_DONOR_MSG = encodeURIComponent(
-  'תודה רבה על התרומה למיזם אקו!\nכדי שנתאם את איסוף הגיטרה אשמח שתכתוב כתובת מדויקת וזמן אפשרי לאיסוף.\nתודה!'
+  '😊 תודה רבה על התרומה למיזם אקו! 🎸\nכדי שנתאם את איסוף הגיטרה אשמח שתכתוב כתובת מדויקת וזמן אפשרי לאיסוף.\nתודה!'
 );
 
 function toWhatsApp(phone) {
@@ -342,7 +342,7 @@ export default function MapView({ isVolunteer = false }) {
       const addr = [g.city, g.street].filter(Boolean).join(', ');
       return [g.name, addr, g.phone].filter(Boolean).join(' | ');
     }).join('\n');
-    const msg = `היי, אני יכול לאסוף את הגיטרות הבאות:\n${lines}`;
+    const msg = `היי, אני יכול/ה לאסוף את הגיטרות הבאות:\n${lines}`;
     return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
   };
 
