@@ -177,13 +177,17 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
   });
 }
 
+const WA_DONOR_MSG = encodeURIComponent(
+  'תודה רבה על התרומה למיזם אקו!\nכדי שנתאם את איסוף הגיטרה אשמח שתכתוב כתובת מדויקת וזמן אפשרי לאיסוף.\nתודה!'
+);
+
 function toWhatsApp(phone) {
   if (!phone) return null;
   let p = phone.replace(/\D/g, '');
   if (p.startsWith('972')) p = p;
   else if (p.startsWith('0')) p = '972' + p.slice(1);
   else if (p.startsWith('5')) p = '972' + p;
-  return `https://wa.me/${p}`;
+  return `https://wa.me/${p}?text=${WA_DONOR_MSG}`;
 }
 
 function WaIcon() {
@@ -520,17 +524,6 @@ export default function MapView({ isVolunteer = false }) {
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
 
-        {/* FAB: below map, above the nearby panel — visible on both mobile and desktop */}
-        {isVolunteer && (
-          <a
-            href={WA_MANAGER_CONTACT}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.volunteerFab}
-          >
-            <WaIcon /> פנה למנהל לאיסוף גיטרות
-          </a>
-        )}
       </div>
 
       {/* ── Right: Nearby Picker ── */}
@@ -580,7 +573,10 @@ export default function MapView({ isVolunteer = false }) {
         {nearby.length > 0 && (
           <div className={styles.nearbyList}>
             <div className={styles.nearbyListHeader}>
-              <p className={styles.nearbySubtitle}>Top 10 גיטרות שלא נאספו בקרבתך</p>
+              <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
+              {isVolunteer && (
+                <span className={styles.checkColHeader}>יכול/ה לאסוף</span>
+              )}
               {!isVolunteer && (
                 <a
                   className={styles.waExportBtn}
@@ -642,16 +638,16 @@ export default function MapView({ isVolunteer = false }) {
           </button>
         )}
 
-        {isVolunteer && selectedIds.size > 0 && (
-          <a
-            href={buildCanCollectWaUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.canCollectBtn}
-          >
-            <WaIcon /> יכול לאסוף ({selectedIds.size})
-          </a>
-        )}
+      {isVolunteer && selectedIds.size > 0 && (
+        <a
+          href={buildCanCollectWaUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.canCollectFab}
+        >
+          <WaIcon /> המשך ({selectedIds.size})
+        </a>
+      )}
       </div>
     </div>
   );
