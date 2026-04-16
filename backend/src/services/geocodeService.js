@@ -45,6 +45,23 @@ async function geocodeAddress(street, city) {
       const routeComponent = extractComponent(components, 'route');
       const cityOnly = !street || !routeComponent;
 
+      // Guard: verify the result is actually in the requested city.
+      // Google sometimes fuzzy-matches a misspelled street to a different city entirely
+      // (e.g. "ליבבנה 5, אור יהודה" → Tel Aviv). If the returned locality doesn't
+      // match the requested city, discard the result so we don't pin it in the wrong place.
+      const resultLocality =
+        extractComponent(components, 'locality') ||
+        extractComponent(components, 'administrative_area_level_2') || '';
+      if (resultLocality) {
+        const reqNorm = normalizeCity(city).trim();
+        const mismatch =
+          !resultLocality.includes(reqNorm) && !reqNorm.includes(resultLocality);
+        if (mismatch) {
+          cache.set(query, null);
+          return null;
+        }
+      }
+
       // Fallback: if Google didn't find the street and the input has a house number,
       // retry with just the street name (no number). Handles cases like "ענב 203"
       // where Google knows "ענב" but not the specific house number.
