@@ -317,6 +317,14 @@ export default function MapView({ isVolunteer = false }) {
 
   const nearbyIds = useMemo(() => new Set(nearby.slice(0, nearbyLimit).map(g => g.id)), [nearby, nearbyLimit]);
 
+  // Guitars selected directly from the map that are NOT in the nearby top list
+  const mapSelectedGuitars = useMemo(() =>
+    [...selectedIds]
+      .filter(id => !nearbyIds.has(id))
+      .map(id => guitars.find(g => g.id === id))
+      .filter(Boolean),
+  [selectedIds, nearbyIds, guitars]);
+
   // Clear selections and reset limit when a new area search is performed
   useEffect(() => { setSelectedIds(new Set()); setNearbyLimit(10); }, [nearby]);
 
@@ -534,8 +542,8 @@ export default function MapView({ isVolunteer = false }) {
 
       </div>
 
-      {/* ── Right: Nearby Picker ── only visible after location entered (for volunteer) */}
-      {(!isVolunteer || userLocation) && <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
+      {/* ── Right: Nearby Picker ── visible after location entered, or when map selections exist */}
+      {(!isVolunteer || userLocation || selectedIds.size > 0) && <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
           <h2>המלצות לאיסוף בקרבתי</h2>
@@ -571,69 +579,106 @@ export default function MapView({ isVolunteer = false }) {
           </div>
         )}
 
-        {nearby.length === 0 && !userLocation && (
+        {nearby.length === 0 && !userLocation && mapSelectedGuitars.length === 0 && (
           <div className={styles.emptyNearby}>
             <MapPin size={40} color="#d1d5db" />
             <p>זהה מיקום כדי לראות<br/>את הגיטרות הקרובות אליך</p>
           </div>
         )}
 
-        {nearby.length > 0 && (
+        {(nearby.length > 0 || mapSelectedGuitars.length > 0) && (
           <div className={styles.nearbyList}>
-            <div className={styles.nearbyListHeader}>
-              <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
-              {isVolunteer && (
-                <span className={styles.checkColHeader}>יכול/ה לאסוף</span>
-              )}
-              {!isVolunteer && (
-                <a
-                  className={styles.waExportBtn}
-                  href={(() => {
-                    const lines = nearby.map((g, i) =>
-                      `${i + 1}. ${g.name}${g.phone ? ` | ${g.phone}` : ''}${g.city ? ` | ${g.city}${g.street ? `, ${g.street}` : ''}` : ''}`
-                    ).join('\n');
-                    const msg = `גיטרות לאיסוף בקרבת ${resolvedAddress || 'המיקום שנבחר'}:\n\n${lines}`;
-                    return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
-                  })()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <WaIcon /> שלח ברשימה
-                </a>
-              )}
-            </div>
-            {nearby.slice(0, nearbyLimit).map((g, i) => (
-              <div
-                key={g.id}
-                className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isVolunteer && selectedIds.has(g.id) ? styles.nearbyCardSelected : ''}`}
-                onClick={() => setHighlightedId(g.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className={styles.nearbyRank}>#{i + 1}</div>
-                <div className={styles.nearbyInfo}>
-                  <div className={styles.nearbyName}>{g.name}</div>
-                  <div className={styles.nearbyAddress}>
-                    <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
-                  </div>
-                  {g.phone && (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
-                      <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /><span className={styles.waBtnLabel}>לתיאום איסוף</span></a>
-                    </div>
+            {nearby.length > 0 && (
+              <>
+                <div className={styles.nearbyListHeader}>
+                  <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
+                  {!isVolunteer && (
+                    <a
+                      className={styles.waExportBtn}
+                      href={(() => {
+                        const lines = nearby.map((g, i) =>
+                          `${i + 1}. ${g.name}${g.phone ? ` | ${g.phone}` : ''}${g.city ? ` | ${g.city}${g.street ? `, ${g.street}` : ''}` : ''}`
+                        ).join('\n');
+                        const msg = `גיטרות לאיסוף בקרבת ${resolvedAddress || 'המיקום שנבחר'}:\n\n${lines}`;
+                        return `https://wa.me/972547274003?text=${encodeURIComponent(msg)}`;
+                      })()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <WaIcon /> שלח ברשימה
+                    </a>
                   )}
                 </div>
-                <div className={styles.nearbyDist}>{g.distance.toFixed(1)} ק"מ</div>
-                {isVolunteer && (
-                  <button
-                    className={`${styles.selectBtn} ${selectedIds.has(g.id) ? styles.selectBtnChecked : ''}`}
-                    onClick={e => { e.stopPropagation(); onToggleSelect(g.id); }}
-                    title="סמן לאיסוף"
+                {nearby.slice(0, nearbyLimit).map((g, i) => (
+                  <div
+                    key={g.id}
+                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isVolunteer && selectedIds.has(g.id) ? styles.nearbyCardSelected : ''}`}
+                    onClick={() => setHighlightedId(g.id)}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {selectedIds.has(g.id) ? '✓' : ''}
-                  </button>
-                )}
+                    <div className={styles.nearbyRank}>#{i + 1}</div>
+                    <div className={styles.nearbyInfo}>
+                      <div className={styles.nearbyName}>{g.name}</div>
+                      <div className={styles.nearbyAddress}>
+                        <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
+                      </div>
+                      {g.phone && (
+                        <div className={styles.nearbyPhoneBlock}>
+                          <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
+                          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /><span className={styles.waBtnLabel}>לתיאום איסוף</span></a>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.nearbyDist}>{g.distance.toFixed(1)} ק"מ</div>
+                    {isVolunteer && (
+                      <div className={styles.selectBtnWrapper}>
+                        <span className={styles.selectBtnLabel}>יכול/ה לאסוף</span>
+                        <button
+                          className={`${styles.selectBtn} ${selectedIds.has(g.id) ? styles.selectBtnChecked : ''}`}
+                          onClick={e => { e.stopPropagation(); onToggleSelect(g.id); }}
+                        >
+                          {selectedIds.has(g.id) ? '✓' : ''}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
+
+            {isVolunteer && mapSelectedGuitars.length > 0 && (
+              <div className={styles.mapSelectedSection}>
+                <div className={styles.mapSelectedHeader}>📍 נבחרו מהמפה</div>
+                {mapSelectedGuitars.map(g => (
+                  <div
+                    key={g.id}
+                    className={`${styles.nearbyCard} ${styles.nearbyCardExternal} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''}`}
+                    onClick={() => setHighlightedId(g.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className={styles.nearbyInfo}>
+                      <div className={styles.nearbyName}>{g.name}</div>
+                      <div className={styles.nearbyAddress}>
+                        <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
+                      </div>
+                      {g.phone && (
+                        <div className={styles.nearbyPhoneBlock}>
+                          <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
+                          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /><span className={styles.waBtnLabel}>לתיאום איסוף</span></a>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.selectBtnWrapper}>
+                      <span className={styles.selectBtnLabel}>הסר</span>
+                      <button
+                        className={`${styles.selectBtn} ${styles.selectBtnChecked}`}
+                        onClick={e => { e.stopPropagation(); onToggleSelect(g.id); }}
+                      >✓</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
         {nearby.length > nearbyLimit && (

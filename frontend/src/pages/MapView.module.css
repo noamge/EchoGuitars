@@ -437,11 +437,18 @@
   width: 28px; flex-shrink: 0; padding-top: 2px;
 }
 
-.nearbyInfo { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.nearbyInfo { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .nearbyName { font-size: 14px; font-weight: 600; }
 .nearbyAddress { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
 .nearbyPhone { font-size: 13px; color: var(--primary); font-weight: 500; text-decoration: none; }
 .nearbyPhone:hover { text-decoration: underline; }
+.nearbyPhoneBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
 .waBtn {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   color: #fff; text-decoration: none;
@@ -451,6 +458,42 @@
 .waBtn:hover { background: #1ebe5d; }
 .waBtnLabel {
   font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+
+.selectBtnWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  align-self: center;
+}
+.selectBtnLabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Guitars added from map popup (outside top-10 nearby) */
+.nearbyCardExternal {
+  border-color: #86efac !important;
+  border-style: dashed !important;
+  background: #f0fdf4 !important;
+}
+.mapSelectedSection {
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mapSelectedHeader {
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+  padding: 0 4px;
 }
 .nearbyType {
   font-size: 11px; background: #eff6ff; color: #1e40af;
