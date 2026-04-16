@@ -286,6 +286,64 @@
   display: none;
 }
 
+/* Full-width map when volunteer hasn't entered a location yet */
+.mapSideFull {
+  flex: 0 0 100% !important;
+}
+
+/* Inline GPS button (sits next to the search input) */
+.volunteerGpsBtnInline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: var(--primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.volunteerGpsBtnInline:disabled { opacity: 0.5; cursor: default; }
+.volunteerGpsBtnInline:not(:disabled):hover { background: var(--primary); }
+
+/* Popup "select for collection" button (volunteer view) */
+.popupSelectBtn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 5px 0;
+  background: transparent;
+  color: #16a34a;
+  border: 1.5px solid #16a34a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.popupSelectBtn:hover { background: #16a34a; color: #fff; }
+
+.popupSelectedBtn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 5px 0;
+  background: #16a34a;
+  color: #fff;
+  border: 1.5px solid #16a34a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.popupSelectedBtn:hover { background: #15803d; border-color: #15803d; }
+
 /* ── Nearby side (right, 40%) ── */
 .nearbySide {
   flex: 0 0 40%;
@@ -516,7 +574,7 @@
   border-radius: 0 0 16px 16px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   direction: rtl;
-  max-width: 88vw;
+  max-width: 96vw;
   text-align: center;
   pointer-events: none;
 }

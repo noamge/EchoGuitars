@@ -47,7 +47,7 @@ function MapInvalidator({ fullscreen }) {
 const CLUSTER_RADIUS_PX = 30;
 
 // Clusters visible guitars by pixel proximity at the current zoom level
-function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected, navigate, viewMode, isVolunteer }) {
+function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected, navigate, viewMode, isVolunteer, selectedIds, onToggleSelect }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
@@ -102,6 +102,14 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
         </button>
       )}
       {!isVolunteer && g.collected && <div className={styles.collected}>✓ נאסף</div>}
+      {isVolunteer && !g.collected && (
+        <button
+          className={selectedIds?.has(g.id) ? styles.popupSelectedBtn : styles.popupSelectBtn}
+          onClick={() => onToggleSelect?.(g.id)}
+        >
+          {selectedIds?.has(g.id) ? '✓ נבחרה לאיסוף' : 'בחר לאיסוף'}
+        </button>
+      )}
       {!isVolunteer && (
         <button className={styles.popupTableBtn} onClick={() => navigate(`/table?field=id&value=${g.id}`)}>
           📋 פתח בטבלה
@@ -147,7 +155,7 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
 
     if (group.length === 1) {
       const g = group[0];
-      const fillColor = isHighlighted ? '#4361ee' : isNearby ? '#7c3aed' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+      const fillColor = isHighlighted ? '#4361ee' : isNearby ? '#22c55e' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
       const radius = isHighlighted ? 14 : isNearby ? 11 : 8;
       return (
         <CircleMarker
@@ -163,7 +171,7 @@ function MapMarkers({ visible, highlightedId, nearbyIds, marking, markCollected,
     }
 
     const allCollected = group.every(g => g.collected);
-    const bg = isHighlighted ? '#4361ee' : isNearby ? '#7c3aed' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+    const bg = isHighlighted ? '#4361ee' : isNearby ? '#22c55e' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
     return (
       <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
         <Popup maxWidth={250}>
@@ -211,10 +219,10 @@ function makeGroupIcon(count, bg) {
 }
 
 function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1) {
-  const bg = highlighted ? '#4361ee' : isNearby ? '#7c3aed' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+  const bg = highlighted ? '#4361ee' : isNearby ? '#22c55e' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
   const size = highlighted ? 28 : isNearby ? 26 : 22;
   const fontSize = highlighted ? 13 : isNearby ? 12 : 11;
-  const ring = highlighted ? ',0 0 0 2.5px #4361ee88' : isNearby ? ',0 0 0 2.5px #7c3aed66' : '';
+  const ring = highlighted ? ',0 0 0 2.5px #4361ee88' : isNearby ? ',0 0 0 2.5px #22c55e66' : '';
   const badge = count > 1
     ? `<div style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);padding:0 2px;">${count}</div>`
     : '';
@@ -261,8 +269,6 @@ function haversine(lat1, lon1, lat2, lon2) {
     Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-const WA_MANAGER_CONTACT = `https://wa.me/972547274003?text=${encodeURIComponent('היי, אשמח להתנדב ולאסוף את הגיטרות של...')}`;
 
 export default function MapView({ isVolunteer = false }) {
   const navigate = useNavigate();
@@ -314,17 +320,16 @@ export default function MapView({ isVolunteer = false }) {
   // Clear selections and reset limit when a new area search is performed
   useEffect(() => { setSelectedIds(new Set()); setNearbyLimit(10); }, [nearby]);
 
-  const toggleSelected = (id, e) => {
-    e.stopPropagation();
+  const onToggleSelect = useCallback((id) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  };
+  }, []);
 
   const buildCanCollectWaUrl = () => {
-    const selected = nearby.filter(g => selectedIds.has(g.id));
+    const selected = [...selectedIds].map(id => guitars.find(g => g.id === id)).filter(Boolean);
     const lines = selected.map(g => {
       const addr = [g.city, g.street].filter(Boolean).join(', ');
       return [g.name, addr, g.phone].filter(Boolean).join(' | ');
@@ -407,7 +412,7 @@ export default function MapView({ isVolunteer = false }) {
         </div>
       )}
       {/* ── Left: Map ── */}
-      <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
+      <div className={`${styles.mapSide} ${isVolunteer && !userLocation ? styles.mapSideFull : ''} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
         <div className={`${styles.mapHeader} ${isVolunteer ? styles.mapHeaderVolunteer : ''}`}>
           {!isVolunteer && (
             <span className={styles.adminCount}>
@@ -428,7 +433,7 @@ export default function MapView({ isVolunteer = false }) {
             </div>
           )}
           {isVolunteer && (
-            <span className={styles.volunteerCount}>
+            <span className={styles.volunteerCount} style={{ flex: 1, textAlign: 'center' }}>
               <span className={styles.volunteerCountNum}>{visible.length}</span> גיטרות ממתינות לאיסוף
             </span>
           )}
@@ -450,23 +455,24 @@ export default function MapView({ isVolunteer = false }) {
             <div className={styles.manualRow}>
               <input
                 className={styles.volunteerLocationInput}
-                placeholder="הזן איזור איסוף..."
+                placeholder="הזן עיר / כתובת לאיסוף..."
                 value={manualInput}
                 onChange={e => setManualInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
               />
               <button className={styles.searchBtn} onClick={handleManualSearch} disabled={locating}>
-                <Search size={13} />
+                <Search size={15} />
+              </button>
+              <button
+                className={styles.volunteerGpsBtnInline}
+                onClick={detectLocation}
+                disabled={locating || loading}
+                title="זיהוי מיקום עצמי"
+              >
+                <Navigation size={14} />
+                {locating ? '...' : 'GPS'}
               </button>
             </div>
-            <button
-              className={styles.volunteerGpsBtn}
-              onClick={detectLocation}
-              disabled={locating || loading}
-            >
-              <Navigation size={13} />
-              {locating ? 'מאתר...' : 'זיהוי מיקום עצמי'}
-            </button>
           </div>
         )}
         {isVolunteer && resolvedAddress && (
@@ -512,6 +518,8 @@ export default function MapView({ isVolunteer = false }) {
                 navigate={navigate}
                 viewMode={viewMode}
                 isVolunteer={isVolunteer}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
               />
             </MapContainer>
           )}
@@ -520,14 +528,14 @@ export default function MapView({ isVolunteer = false }) {
         <div className={styles.legend}>
           {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
-          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#7c3aed'}}/> טופ 10</div>}
+          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> טופ 10</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
 
       </div>
 
-      {/* ── Right: Nearby Picker ── */}
-      <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
+      {/* ── Right: Nearby Picker ── only visible after location entered (for volunteer) */}
+      {(!isVolunteer || userLocation) && <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
           <h2>המלצות לאיסוף בקרבתי</h2>
@@ -619,7 +627,7 @@ export default function MapView({ isVolunteer = false }) {
                 {isVolunteer && (
                   <button
                     className={`${styles.selectBtn} ${selectedIds.has(g.id) ? styles.selectBtnChecked : ''}`}
-                    onClick={e => toggleSelected(g.id, e)}
+                    onClick={e => { e.stopPropagation(); onToggleSelect(g.id); }}
                     title="סמן לאיסוף"
                   >
                     {selectedIds.has(g.id) ? '✓' : ''}
@@ -638,6 +646,9 @@ export default function MapView({ isVolunteer = false }) {
           </button>
         )}
 
+      </div>}
+
+      {/* ── Floating "המשך" FAB — shown whenever selections exist (outside nearbySide so it's always visible) ── */}
       {isVolunteer && selectedIds.size > 0 && (
         <a
           href={buildCanCollectWaUrl()}
@@ -648,7 +659,6 @@ export default function MapView({ isVolunteer = false }) {
           <WaIcon /> המשך ({selectedIds.size})
         </a>
       )}
-      </div>
     </div>
   );
 }
