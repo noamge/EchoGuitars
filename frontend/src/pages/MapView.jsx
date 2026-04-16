@@ -412,7 +412,7 @@ export default function MapView({ isVolunteer = false }) {
         </div>
       )}
       {/* ── Left: Map ── */}
-      <div className={`${styles.mapSide} ${isVolunteer && !userLocation ? styles.mapSideFull : ''} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
+      <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
         <div className={`${styles.mapHeader} ${isVolunteer ? styles.mapHeaderVolunteer : ''}`}>
           {!isVolunteer && (
             <span className={styles.adminCount}>
