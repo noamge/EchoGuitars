@@ -3,7 +3,6 @@ import AsyncSelect from 'react-select/async';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   getGuitarsByName,
-  getGuitar,
   updateGuitar,
   uploadImage,
   searchDonors,
@@ -38,9 +37,6 @@ function CollectMode() {
   const [imageFile, setImageFile]   = useState(null);
   const [imagePreview, setImagePreview] = useState('');
 
-  const [guitarNumInput, setGuitarNumInput] = useState('');
-  const [guitarNumLoading, setGuitarNumLoading] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -69,26 +65,8 @@ function CollectMode() {
     setNewDonorName(''); setNewDonorPhone(''); setNewDonorCity(''); setNewDonorGuitarType('');
     setCollector(''); setDestination('');
     setNotes('');
-    setGuitarNumInput('');
     setImageFile(null); setImagePreview('');
   }
-
-  const handleGuitarNumSearch = async () => {
-    const num = parseInt(guitarNumInput.trim(), 10);
-    if (!num || num < 1) return;
-    setGuitarNumLoading(true);
-    try {
-      const guitar = await getGuitar(num);
-      prefill(guitar);
-      setDonorOption({ value: guitar.name, label: `${guitar.name} — ${guitar.city}` });
-      setDonorGuitars([guitar]);
-      setGuitarNumInput('');
-    } catch {
-      alert(`גיטרה #${num} לא נמצאה`);
-    } finally {
-      setGuitarNumLoading(false);
-    }
-  };
 
   const openNewDonorMode = (prefillName = '') => {
     setNewDonorMode(true);
@@ -195,30 +173,6 @@ function CollectMode() {
           value={destination}
           onChange={e => setDestination(e.target.value)}
         />
-
-        {/* ── Guitar number search ── */}
-        <label className={styles.label}>מספר גיטרה</label>
-        <div className={styles.guitarNumRow}>
-          <input
-            className={styles.input}
-            type="number"
-            min={1}
-            placeholder="הזן מספר גיטרה (#)..."
-            value={guitarNumInput}
-            onChange={e => setGuitarNumInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleGuitarNumSearch()}
-          />
-          <button
-            type="button"
-            className={styles.guitarNumBtn}
-            onClick={handleGuitarNumSearch}
-            disabled={!guitarNumInput || guitarNumLoading}
-          >
-            {guitarNumLoading ? '...' : 'חפש'}
-          </button>
-        </div>
-
-        <div className={styles.orDivider}><span>או</span></div>
 
         {/* ── Donor search OR new-donor form ── */}
         {!newDonorMode ? (
