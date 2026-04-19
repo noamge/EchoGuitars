@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import AsyncSelect from 'react-select/async';
+import { useState, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   getGuitarsByName,
@@ -17,84 +16,57 @@ const GUITAR_TYPES = ['קלאסית', 'אקוסטית', 'חשמלית'];
 // ─── CollectMode ──────────────────────────────────────────────────────────────
 
 function CollectMode() {
-  const [donorOption, setDonorOption] = useState(null);
-  const [donorGuitars, setDonorGuitars] = useState([]);
-  const [selectedGuitarId, setSelectedGuitarId] = useState(''); // guitar.id (stable ID from col U)
-  const [donorInputValue, setDonorInputValue] = useState('');
-  const [noResults, setNoResults] = useState(false);
+  const [collector, setCollector]     = useState('');
+  const [destination, setDestination] = useState('');
+  const [notes, setNotes]             = useState('');
+
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedGuitars, setSelectedGuitars] = useState([]);
+
+  const [submitting, setSubmitting]     = useState(false);
+  const [actionResults, setActionResults] = useState([]);
 
   // New donor mode
-  const [newDonorMode, setNewDonorMode] = useState(false);
-  const [newDonorName, setNewDonorName] = useState('');
-  const [newDonorPhone, setNewDonorPhone] = useState('');
-  const [newDonorCity, setNewDonorCity] = useState('');
+  const [newDonorMode, setNewDonorMode]         = useState(false);
+  const [newDonorName, setNewDonorName]         = useState('');
+  const [newDonorPhone, setNewDonorPhone]       = useState('');
+  const [newDonorCity, setNewDonorCity]         = useState('');
   const [newDonorGuitarType, setNewDonorGuitarType] = useState('');
   const newDonorFormRef = useRef(null);
+  const searchTimeout   = useRef(null);
 
-  const [collector, setCollector]   = useState('');
-  const [destination, setDestination] = useState('');
-  const [notes, setNotes]           = useState('');
-  const [imageFile, setImageFile]   = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-
-  const [submitting, setSubmitting] = useState(false);
-
+  // Debounced donor search
   useEffect(() => {
-    if (!donorOption) { setDonorGuitars([]); setSelectedGuitarId(''); return; }
-    getGuitarsByName(donorOption.value).then(list => {
-      setDonorGuitars(list);
-      if (list.length === 1) prefill(list[0]);
-      else setSelectedGuitarId('');
-    });
-  }, [donorOption]);
+    if (searchQuery.length < 2) { setSearchResults([]); return; }
+    clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const donors = await searchDonors(searchQuery);
+        setSearchResults(donors);
+      } catch { setSearchResults([]); }
+    }, 300);
+    return () => clearTimeout(searchTimeout.current);
+  }, [searchQuery]);
 
-  function prefill(guitar) {
-    setSelectedGuitarId(guitar.id); // use stable ID, not physical rowIndex
-    setNotes('');
-    setImagePreview('');
-    // collector and destination are independent — do not reset them here
-  }
-
-  function resetForm() {
-    setDonorOption(null);
-    setDonorGuitars([]);
-    setSelectedGuitarId('');
-    setDonorInputValue('');
-    setNoResults(false);
-    setNewDonorMode(false);
-    setNewDonorName(''); setNewDonorPhone(''); setNewDonorCity(''); setNewDonorGuitarType('');
-    setCollector(''); setDestination('');
-    setNotes('');
-    setImageFile(null); setImagePreview('');
-  }
-
-  const openNewDonorMode = (prefillName = '') => {
-    setNewDonorMode(true);
-    setNewDonorName(prefillName);
-    setTimeout(() => newDonorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  const handleDonorClick = async (donor) => {
+    setSearchQuery('');
+    setSearchResults([]);
+    try {
+      const guitars = await getGuitarsByName(donor.name);
+      const uncollected = guitars.filter(g => !g.collected);
+      if (uncollected.length === 0) {
+        toast.error(`כל הגיטרות של ${donor.name} כבר נאספו`);
+        return;
+      }
+      setSelectedGuitars(prev => {
+        const existingIds = new Set(prev.map(g => g.id));
+        return [...prev, ...uncollected.filter(g => !existingIds.has(g.id))];
+      });
+    } catch (err) { toast.error('שגיאה: ' + err.message); }
   };
 
-  const loadDonorOptions = useCallback(async (inputValue) => {
-    if (!inputValue || inputValue.length < 2) { setNoResults(false); return []; }
-    const donors = await searchDonors(inputValue);
-    setNoResults(donors.length === 0);
-    return donors.map(d => ({
-      value: d.name,
-      label: `${d.name} — ${d.city}`,
-    }));
-  }, []);
-
-  const handleGuitarSelect = (rowIndex) => {
-    const g = donorGuitars.find(g => g.rowIndex === Number(rowIndex));
-    if (g) prefill(g);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
+  const removeGuitar = (id) => setSelectedGuitars(prev => prev.filter(g => g.id !== id));
 
   const buildNotes = () => {
     const parts = [];
@@ -104,109 +76,117 @@ function CollectMode() {
     return parts.join(' | ');
   };
 
+  const openNewDonorMode = () => {
+    setNewDonorMode(true);
+    setTimeout(() => newDonorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
+  function resetForm() {
+    setCollector(''); setDestination(''); setNotes('');
+    setSearchQuery(''); setSearchResults([]); setSelectedGuitars([]);
+    setNewDonorMode(false);
+    setNewDonorName(''); setNewDonorPhone(''); setNewDonorCity(''); setNewDonorGuitarType('');
+    setActionResults([]);
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    try {
-      let imageUrl = '';
-      if (imageFile) {
-        try { const u = await uploadImage(imageFile); imageUrl = u.url; } catch {}
-      }
+    setActionResults([]);
 
-      if (newDonorMode) {
+    // New donor mode — single new guitar
+    if (newDonorMode) {
+      try {
         await addGuitar({
-          name:        newDonorName.trim(),
-          phone:       newDonorPhone.trim(),
-          city:        newDonorCity.trim(),
-          guitarType:  newDonorGuitarType,
-          collected:   true,
-          notes:       buildNotes(),
-          ...(imageUrl && { imageUrl }),
+          name: newDonorName.trim(), phone: newDonorPhone.trim(),
+          city: newDonorCity.trim(), guitarType: newDonorGuitarType,
+          collected: true, notes: buildNotes(),
         });
         toast.success('תורם חדש נוסף והגיטרה סומנה כנאספה!');
         resetForm();
-        return;
-      }
-
-      if (!selectedGuitarId) { alert('יש לבחור גיטרה'); setSubmitting(false); return; }
-
-      await updateGuitar(selectedGuitarId, {
-        collected: true,
-        notes:     buildNotes(),
-        ...(imageUrl && { imageUrl }),
-      });
-      toast.success('הגיטרה סומנה כ"נאספה" בהצלחה!');
-      resetForm();
-    } catch (err) {
-      toast.error('שגיאה: ' + err.message);
-    } finally {
+      } catch (err) { toast.error('שגיאה: ' + err.message); }
       setSubmitting(false);
+      return;
     }
-  };
 
-  const currentGuitar = donorGuitars.find(g => g.id === Number(selectedGuitarId));
+    if (selectedGuitars.length === 0) { toast.error('יש לבחור לפחות גיטרה אחת'); setSubmitting(false); return; }
+
+    const builtNotes = buildNotes();
+    const results = [];
+    for (const g of selectedGuitars) {
+      try {
+        await updateGuitar(g.id, { collected: true, notes: builtNotes });
+        results.push({ guitar: g, ok: true });
+      } catch (err) {
+        results.push({ guitar: g, ok: false, err: err.message });
+      }
+    }
+    setActionResults(results);
+    if (results.every(r => r.ok)) {
+      toast.success(`${results.length} גיטרות סומנו כנאספו בהצלחה!`);
+      resetForm();
+    }
+    setSubmitting(false);
+  };
 
   return (
     <>
       <div className={styles.collectHeader}>
-        <p className={styles.sectionSub}>מלאו את הטופס כדי לסמן גיטרה כנאספה</p>
-        <button
-          type="button"
-          className={styles.newGuitarBtn}
-          onClick={() => openNewDonorMode()}
-        >
-          <Plus size={15} /> גיטרה חדשה שנאספה
+        <p className={styles.sectionSub}>סמן גיטרות שנאספו</p>
+        <button type="button" className={styles.newGuitarBtn} onClick={openNewDonorMode}>
+          <Plus size={15} /> גיטרה חדשה
         </button>
       </div>
+
       <form className={styles.form} onSubmit={handleSubmit}>
         <label className={styles.label}>שם האוסף</label>
+        <input className={styles.input} placeholder="מי אוסף את הגיטרות?" value={collector} onChange={e => setCollector(e.target.value)} />
+
+        <label className={styles.label}>לאן לוקחים את הגיטרות?</label>
+        <input className={styles.input} placeholder="כתובת יעד / שם מקום..." value={destination} onChange={e => setDestination(e.target.value)} />
+
+        <label className={styles.label}>חיפוש תורמים להוספה</label>
         <input
           className={styles.input}
-          placeholder="מי אוסף את הגיטרה?"
-          value={collector}
-          onChange={e => setCollector(e.target.value)}
+          placeholder="הקלד שם תורם לחיפוש..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
         />
-        <label className={styles.label}>לאן לוקחים את הגיטרה?</label>
-        <input
-          className={styles.input}
-          placeholder="כתובת יעד / שם מקום..."
-          value={destination}
-          onChange={e => setDestination(e.target.value)}
-        />
-
-        {/* ── Donor search OR new-donor form ── */}
-        {!newDonorMode ? (
-          <>
-            <label className={styles.label}>שם התורם/ת</label>
-            <AsyncSelect
-              cacheOptions
-              loadOptions={loadDonorOptions}
-              inputValue={donorInputValue}
-              onInputChange={(v) => { setDonorInputValue(v); if (v.length < 2) setNoResults(false); }}
-              value={donorOption}
-              onChange={(opt) => { setDonorOption(opt); setNoResults(false); }}
-              placeholder="הקלד שם לחיפוש..."
-              noOptionsMessage={({ inputValue }) =>
-                inputValue.length < 2 ? 'הקלד לפחות 2 תווים' : 'לא נמצאו תורמים'
-              }
-              isClearable
-              classNamePrefix="rs"
-            />
-
-            {noResults && donorInputValue.length >= 2 && (
-              <div className={styles.newDonorPrompt}>
-                <span>"{donorInputValue}" לא נמצא ברשימה</span>
-                <button
-                  type="button"
-                  className={styles.newDonorBtn}
-                  onClick={() => openNewDonorMode(donorInputValue)}
-                >
-                  + הוסף תורם חדש
-                </button>
+        {searchResults.length > 0 && (
+          <div className={styles.searchResults}>
+            {searchResults.map((d, i) => (
+              <div key={i} className={styles.searchResultItem} onClick={() => handleDonorClick(d)}>
+                {d.name} — {d.city}
               </div>
-            )}
-          </>
-        ) : (
+            ))}
+          </div>
+        )}
+        {searchQuery.length >= 2 && searchResults.length === 0 && (
+          <div className={styles.newDonorPrompt}>
+            <span>"{searchQuery}" לא נמצא ברשימה</span>
+            <button type="button" className={styles.newDonorBtn} onClick={openNewDonorMode}>
+              + הוסף תורם חדש
+            </button>
+          </div>
+        )}
+
+        <label className={styles.label}>גיטרות שנבחרו ({selectedGuitars.length})</label>
+        <div className={styles.chipList}>
+          {selectedGuitars.length === 0 && (
+            <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>טרם נבחרו גיטרות</span>
+          )}
+          {selectedGuitars.map(g => (
+            <span key={g.id} className={styles.chip}>
+              {g.name}{g.city ? ` — ${g.city}` : ''}
+              <button type="button" className={styles.chipRemove} onClick={() => removeGuitar(g.id)} title="הסר">
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
+
+        {/* New donor form */}
+        {newDonorMode && (
           <div className={styles.newDonorForm} ref={newDonorFormRef}>
             <div className={styles.newDonorTitle}>🎸 הוספת תורם חדש</div>
             <label className={styles.label}>שם מלא</label>
@@ -226,77 +206,26 @@ function CollectMode() {
           </div>
         )}
 
-        {donorGuitars.length > 0 && donorGuitars.every(g => g.collected) && (
-          <div className={styles.alert} style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #f59e0b' }}>
-            <AlertCircle size={17} />
-            <span>שים לב: כל הגיטרות של תורם זה כבר סומנו כנאספות. ייתכן שמדובר בטעות בשם או בסימון קודם.</span>
-          </div>
-        )}
-
-        {donorGuitars.length > 1 && (
-          <>
-            <label className={styles.label}>בחר גיטרה (לתורם יש {donorGuitars.length} רשומות)</label>
-            <select
-              className={styles.select}
-              value={currentGuitar?.rowIndex ?? ''}
-              onChange={e => handleGuitarSelect(e.target.value)}
-            >
-              <option value="">— בחר —</option>
-              {donorGuitars.map(g => (
-                <option key={g.rowIndex} value={g.rowIndex}>
-                  #{g.rowIndex} | {g.guitarType || 'סוג לא ידוע'} | {g.city}
-                  {g.collected ? ' ✓ נאספה' : ''}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
-
-        {currentGuitar && currentGuitar.collected && (
-          <div className={styles.alert} style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #f59e0b' }}>
-            <AlertCircle size={17} />
-            <span>גיטרה זו כבר סומנה כנאספה בעבר. האם בטוח שזה נכון?</span>
-          </div>
-        )}
-
-        {currentGuitar && (
-          <div className={styles.guitarInfo}>
-            <span>🎸 {currentGuitar.guitarType || 'סוג לא ידוע'}</span>
-            <span>📍 {currentGuitar.city}{currentGuitar.street ? `, ${currentGuitar.street}` : ''}</span>
-            <span>📞 {currentGuitar.phone}</span>
-          </div>
-        )}
-
         <label className={styles.label}>הערות</label>
-        <textarea
-          className={styles.textarea}
-          rows={4}
-          placeholder="תארו את מצב הגיטרה, נזקים, מאפיינים מיוחדים..."
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-        />
+        <textarea className={styles.textarea} rows={3} placeholder="הערות כלליות לאיסוף..." value={notes} onChange={e => setNotes(e.target.value)} />
 
-        <label className={styles.label}>תמונת הגיטרה</label>
-        <div className={styles.uploadBtns}>
-          <label className={styles.uploadBtn}>
-            <input type="file" accept="image/*" onChange={handleImageChange} hidden />
-            📁 גלריה
-          </label>
-          <label className={styles.uploadBtn}>
-            <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} hidden />
-            📷 צלם
-          </label>
-        </div>
-        {imagePreview && (
-          <img src={imagePreview} alt="preview" className={styles.preview} style={{ borderRadius: 8 }} />
+        {actionResults.length > 0 && (
+          <div className={styles.actionResults}>
+            {actionResults.map(({ guitar, ok, err }) => (
+              <div key={guitar.id} className={`${styles.actionResult} ${ok ? styles.actionResultOk : styles.actionResultErr}`}>
+                {ok ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                <span>{guitar.name} — {ok ? 'נשמר בהצלחה' : `שגיאה: ${err}`}</span>
+              </div>
+            ))}
+          </div>
         )}
 
         <button
           type="submit"
           className={styles.submitBtn}
-          disabled={submitting || (!selectedGuitarId && !newDonorMode)}
+          disabled={submitting || (selectedGuitars.length === 0 && !newDonorMode)}
         >
-          {submitting ? 'שומר...' : newDonorMode ? '+ הוסף תורם וסמן כנאסף' : '✓ סמן כנאסף'}
+          {submitting ? 'שומר...' : newDonorMode ? '+ הוסף תורם וסמן כנאסף' : `✓ סמן ${selectedGuitars.length || ''} גיטרות כנאספו`}
         </button>
       </form>
     </>
