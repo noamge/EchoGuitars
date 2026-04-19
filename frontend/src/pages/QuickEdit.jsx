@@ -52,8 +52,7 @@ function CollectMode() {
     setSelectedGuitarId(guitar.id); // use stable ID, not physical rowIndex
     setNotes('');
     setImagePreview('');
-    setCollector('');
-    setDestination('');
+    // collector and destination are independent — do not reset them here
   }
 
   function resetForm() {
