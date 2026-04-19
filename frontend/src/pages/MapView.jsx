@@ -546,7 +546,7 @@ export default function MapView({ isVolunteer = false }) {
       <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
-          <h2>המלצות לאיסוף בקרבתי</h2>
+          <h2>{isVolunteer && userLocation ? 'לאיסוף גיטרות בקרבתי:' : 'המלצות לאיסוף בקרבתי'}</h2>
           <button className={styles.expandBtn} onClick={() => setNearbyExpanded(e => !e)} title={nearbyExpanded ? 'צמצם' : 'הרחב'}>
             {nearbyExpanded ? '▼' : '▲'}
           </button>
@@ -591,7 +591,10 @@ export default function MapView({ isVolunteer = false }) {
             {nearby.length > 0 && (
               <>
                 <div className={styles.nearbyListHeader}>
-                  <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
+                  {isVolunteer
+                    ? <p className={styles.nearbyInstruction}>בחר גיטרות שתוכל/י לאסוף, הן ישלחו בוואטסאפ למנהל המיזם לאישור</p>
+                    : <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
+                  }
                   {!isVolunteer && (
                     <a
                       className={styles.waExportBtn}
