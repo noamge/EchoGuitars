@@ -59,6 +59,45 @@
 
 .textarea { resize: vertical; }
 
+.guitarNumRow {
+  display: flex;
+  gap: 8px;
+}
+.guitarNumRow .input {
+  flex: 1;
+}
+.guitarNumBtn {
+  padding: 10px 18px;
+  background: var(--primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.guitarNumBtn:hover:not(:disabled) { background: var(--primary); }
+.guitarNumBtn:disabled { opacity: 0.5; cursor: default; }
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  margin: 2px 0;
+}
+.orDivider::before, .orDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .guitarInfo {
   display: flex;
   flex-wrap: wrap;
