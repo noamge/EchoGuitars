@@ -592,7 +592,7 @@ export default function MapView({ isVolunteer = false }) {
               <>
                 <div className={styles.nearbyListHeader}>
                   {isVolunteer
-                    ? <p className={styles.nearbyInstruction}>בחר גיטרות שתוכל/י לאסוף, הן ישלחו בוואטסאפ למנהל המיזם לאישור</p>
+                    ? <p className={styles.nearbyInstruction}>בחר גיטרות שתוכל/י לאסוף, הן ישלחו למנהל המיזם לאישור</p>
                     : <p className={styles.nearbySubtitle}>Top {nearbyLimit} גיטרות שלא נאספו בקרבתך</p>
                   }
                   {!isVolunteer && (
