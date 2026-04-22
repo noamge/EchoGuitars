@@ -395,6 +395,7 @@ function getBadgeClass(action) {
   switch (action) {
     case 'collected': return styles.badgeCollected;
     case 'repaired':  return styles.badgeRepaired;
+    case 'in_repair': return styles.badgeRepaired;
     case 'donated':   return styles.badgeDonated;
     case 'notes':     return styles.badgeNotes;
     default:          return styles.badgeUnknown;
@@ -404,7 +405,8 @@ function getBadgeClass(action) {
 function getActionLabel(action) {
   switch (action) {
     case 'collected': return 'נאסף';
-    case 'repaired':  return 'תוקן';
+    case 'repaired':  return 'תוקן ✓';
+    case 'in_repair': return 'בתיקון';
     case 'donated':   return 'נתרם';
     case 'notes':     return 'הערה';
     default:          return action;
@@ -495,7 +497,8 @@ function AiMode() {
       }
       let updates = {};
       if (action.action === 'collected') updates = { collected: true };
-      else if (action.action === 'repaired') updates = { repaired: true };
+      else if (action.action === 'repaired') updates = { repaired: true, ...(action.whoRepairs ? { whoRepairs: action.whoRepairs } : {}) };
+      else if (action.action === 'in_repair') updates = { repaired: false, ...(action.whoRepairs ? { whoRepairs: action.whoRepairs } : {}) };
       else if (action.action === 'donated') updates = { donatedTo: action.donatedTo, collected: true };
       else if (action.action === 'notes') updates = { notes: action.notes };
       try {
@@ -588,8 +591,11 @@ function AiMode() {
                         : `לא זוהה — ${action.guitarName}`}
                     </div>
                     <div className={styles.actionCardDetail}>
-                      {action.action === 'donated' && action.donatedTo && `נתרם ל: ${action.donatedTo}`}
-                      {action.action === 'notes' && action.notes}
+                      {action.action === 'donated'   && action.donatedTo  && `נתרם ל: ${action.donatedTo}`}
+                      {action.action === 'notes'     && action.notes}
+                      {action.action === 'repaired'  && action.whoRepairs && `מתקן: ${action.whoRepairs} ✓`}
+                      {action.action === 'in_repair' && action.whoRepairs && `בתיקון אצל: ${action.whoRepairs}`}
+                      {action.action === 'in_repair' && !action.whoRepairs && 'נשלחה לתיקון'}
                       {!action.guitarId && <span style={{ color: '#dc2626' }}>⚠️ לא ניתן לשמור</span>}
                     </div>
                     {isLow && action.question && (

@@ -77,7 +77,15 @@ A volunteer wrote this update in Hebrew:
 "${text}"
 
 Parse this update and identify every guitar mentioned and what should be done.
-Possible actions: "collected" (נאסף), "repaired" (תוקן), "donated" (נתרם), "notes" (הערה בלבד).
+Possible actions:
+- "collected"  — guitar was collected (נאסף)
+- "repaired"   — guitar was fully repaired / fixed (תוקן/סיים תיקון)
+- "in_repair"  — guitar is currently being repaired / sent for repair, but not done yet (בתיקון/נשלח לתיקון)
+- "donated"    — guitar was donated to an organization (נתרם)
+- "notes"      — general note only
+
+For "repaired" and "in_repair" actions, also extract:
+- "whoRepairs": the name of the person or workshop doing the repair (מי מתקן), or null if not mentioned
 
 Return ONLY valid JSON:
 {
@@ -85,8 +93,9 @@ Return ONLY valid JSON:
     {
       "guitarId": <matched ID number, or null if unsure>,
       "guitarName": "<matched donor name, or what was mentioned>",
-      "action": "collected|repaired|donated|notes",
+      "action": "collected|repaired|in_repair|donated|notes",
       "donatedTo": "<org name if donated, else null>",
+      "whoRepairs": "<repairer name if repair action, else null>",
       "notes": "<note text if action is notes, else null>",
       "confidence": "high|low",
       "question": "<clarifying question in Hebrew if confidence is low, else null>"

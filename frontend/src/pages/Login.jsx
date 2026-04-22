@@ -3,6 +3,86 @@ import { useState } from 'react';
 const ADMIN_PASSWORD     = 'JANIS123';
 const VOLUNTEER_PASSWORD = 'JANIS';
 
+const s = {
+  page: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #0f2027 0%, #1a3a5c 50%, #2d6a4f 100%)',
+    padding: '24px 16px',
+  },
+  card: {
+    background: '#fff',
+    borderRadius: 20,
+    padding: '40px 36px 32px',
+    width: '100%',
+    maxWidth: 380,
+    boxShadow: '0 24px 64px rgba(0,0,0,0.32)',
+    direction: 'rtl',
+  },
+  logo: {
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  logoEmoji: { fontSize: 52, lineHeight: 1, display: 'block', marginBottom: 10 },
+  logoTitle: {
+    fontSize: 26, fontWeight: 800, color: '#1a3a5c',
+    margin: '0 0 4px', letterSpacing: '-0.5px',
+  },
+  logoSub: { fontSize: 13, color: '#6b7280', margin: 0 },
+
+  sectionTitle: {
+    fontSize: 15, fontWeight: 700, color: '#1a3a5c',
+    marginBottom: 16, paddingBottom: 10,
+    borderBottom: '2px solid #e5e7eb',
+  },
+  fieldGroup: { marginBottom: 12 },
+  label: {
+    display: 'block', fontSize: 12, fontWeight: 700,
+    color: '#374151', marginBottom: 5, letterSpacing: '0.3px',
+  },
+  input: {
+    width: '100%', padding: '10px 13px',
+    border: '1.5px solid #d1d5db', borderRadius: 9,
+    fontSize: 14, color: '#111827', background: '#f9fafb',
+    boxSizing: 'border-box', outline: 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+    fontFamily: 'inherit',
+  },
+  inputError: { borderColor: '#ef4444', background: '#fff5f5' },
+  errorMsg: { color: '#ef4444', fontSize: 12, marginTop: 4 },
+
+  btn: {
+    width: '100%', padding: '12px',
+    background: 'linear-gradient(135deg, #1a3a5c, #2d6a4f)',
+    color: '#fff', border: 'none', borderRadius: 10,
+    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+    marginTop: 6, letterSpacing: '0.3px',
+    transition: 'opacity 0.15s, transform 0.1s',
+  },
+  divider: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    margin: '22px 0 18px', color: '#9ca3af', fontSize: 12,
+  },
+  dividerLine: { flex: 1, height: 1, background: '#e5e7eb' },
+
+  adminBtn: {
+    width: '100%', padding: '10px',
+    background: 'transparent', color: '#6b7280',
+    border: '1.5px solid #e5e7eb', borderRadius: 9,
+    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    transition: 'border-color 0.15s, color 0.15s',
+    fontFamily: 'inherit',
+  },
+  backLink: {
+    background: 'none', border: 'none', color: '#9ca3af',
+    fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
+    display: 'block', textAlign: 'center', marginTop: 12,
+    fontFamily: 'inherit',
+  },
+};
+
 export default function Login({ onLogin }) {
   const [adminMode, setAdminMode]   = useState(false);
   const [adminPw, setAdminPw]       = useState('');
@@ -32,38 +112,33 @@ export default function Login({ onLogin }) {
     onLogin('admin', null);
   };
 
-  const card = {
-    background: 'var(--bg-card)', borderRadius: 16, padding: '36px 32px',
-    boxShadow: 'var(--shadow)', width: 360, direction: 'rtl',
-  };
-
-  // ── Admin popup ─────────────────────────────────────────────────────────────
   if (adminMode) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
-        <div style={card}>
-          <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 8 }}>🔐</div>
-          <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary-dark)', textAlign: 'center', marginBottom: 20 }}>כניסה כמנהל</h1>
-          <form onSubmit={handleAdmin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <input
-              type="password"
-              placeholder="סיסמת מנהל..."
-              value={adminPw}
-              onChange={e => { setAdminPw(e.target.value); setAdminErr(false); }}
-              autoFocus
-              style={{
-                padding: '10px 14px', border: `1.5px solid ${adminErr ? '#ef4444' : 'var(--border)'}`,
-                borderRadius: 8, fontSize: 15, textAlign: 'center', direction: 'ltr',
-              }}
-            />
-            {adminErr && <p style={{ color: '#ef4444', fontSize: 13, margin: 0, textAlign: 'center' }}>סיסמה שגויה</p>}
-            <button type="submit" style={{
-              padding: '11px', background: 'var(--primary)', color: '#fff',
-              border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-            }}>כניסה</button>
-            <button type="button" onClick={() => { setAdminMode(false); setAdminErr(false); setAdminPw(''); }}
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
-              חזרה
+      <div style={s.page}>
+        <div style={s.card}>
+          <div style={s.logo}>
+            <span style={s.logoEmoji}>🔐</span>
+            <h1 style={s.logoTitle}>כניסת מנהל</h1>
+            <p style={s.logoSub}>EchoGuitars — גיטרה לכל ילד</p>
+          </div>
+          <form onSubmit={handleAdmin}>
+            <div style={s.fieldGroup}>
+              <label style={s.label}>סיסמת מנהל</label>
+              <input
+                type="password"
+                placeholder="הזן סיסמה..."
+                value={adminPw}
+                onChange={e => { setAdminPw(e.target.value); setAdminErr(false); }}
+                autoFocus
+                dir="ltr"
+                style={{ ...s.input, ...(adminErr ? s.inputError : {}), textAlign: 'center' }}
+              />
+              {adminErr && <div style={s.errorMsg}>סיסמה שגויה</div>}
+            </div>
+            <button type="submit" style={s.btn}>כניסה</button>
+            <button type="button" style={s.backLink}
+              onClick={() => { setAdminMode(false); setAdminErr(false); setAdminPw(''); }}>
+              ← חזרה
             </button>
           </form>
         </div>
@@ -71,85 +146,62 @@ export default function Login({ onLogin }) {
     );
   }
 
-  // ── Main volunteer login screen ─────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
-      <div style={card}>
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 48, marginBottom: 6 }}>🎸</div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }}>EchoGuitars</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>גיטרה לכל ילד</p>
+    <div style={s.page}>
+      <div style={s.card}>
+        {/* Logo */}
+        <div style={s.logo}>
+          <span style={s.logoEmoji}>🎸</span>
+          <h1 style={s.logoTitle}>EchoGuitars</h1>
+          <p style={s.logoSub}>גיטרה לכל ילד</p>
         </div>
 
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>התחבר כמתנדב</h2>
-
-        <form onSubmit={handleVolunteer} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>שם מלא *</label>
+        {/* Volunteer form */}
+        <div style={s.sectionTitle}>🙋 כניסה כמתנדב/ת</div>
+        <form onSubmit={handleVolunteer}>
+          <div style={s.fieldGroup}>
+            <label style={s.label}>שם מלא *</label>
             <input
               placeholder="השם שלך..."
               value={volName}
               onChange={e => { setVolName(e.target.value); setVolErr(''); }}
               autoFocus
-              style={inputStyle()}
+              style={s.input}
             />
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>כתובת (לא חובה)</label>
+          <div style={s.fieldGroup}>
+            <label style={s.label}>כתובת (לא חובה)</label>
             <input
-              placeholder="עיר / רחוב..."
+              placeholder="עיר / רחוב — לשימוש כנקודת מוצא במפה"
               value={volAddress}
               onChange={e => setVolAddress(e.target.value)}
-              style={inputStyle()}
+              style={s.input}
             />
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>סיסמה *</label>
+          <div style={s.fieldGroup}>
+            <label style={s.label}>סיסמה *</label>
             <input
               type="password"
               placeholder="סיסמת מתנדבים..."
               value={volPw}
               onChange={e => { setVolPw(e.target.value); setVolErr(''); }}
-              style={inputStyle(!!volErr)}
-              dir="ltr"
+              style={{ ...s.input, ...(volErr ? s.inputError : {}), textAlign: 'center', direction: 'ltr' }}
             />
+            {volErr && <div style={s.errorMsg}>{volErr}</div>}
           </div>
-
-          {volErr && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{volErr}</p>}
-
-          <button type="submit" style={{
-            marginTop: 4, padding: '12px', background: 'var(--primary)', color: '#fff',
-            border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer',
-          }}>
-            🙋 כניסה כמתנדב
-          </button>
+          <button type="submit" style={s.btn}>כניסה כמתנדב ←</button>
         </form>
 
-        <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-          <button
-            onClick={() => setAdminMode(true)}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-muted)',
-              fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
-            }}
-          >
-            🔐 כניסה כמנהל
-          </button>
+        {/* Admin link */}
+        <div style={s.divider}>
+          <span style={s.dividerLine} />
+          <span>או</span>
+          <span style={s.dividerLine} />
         </div>
+        <button style={s.adminBtn} onClick={() => setAdminMode(true)}>
+          🔐 כניסה כמנהל
+        </button>
       </div>
     </div>
   );
-}
-
-function inputStyle(error = false) {
-  return {
-    padding: '9px 12px',
-    border: `1.5px solid ${error ? '#ef4444' : 'var(--border)'}`,
-    borderRadius: 8,
-    fontSize: 14,
-    background: 'var(--bg)',
-    color: 'var(--text)',
-  };
 }

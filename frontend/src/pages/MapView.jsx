@@ -76,11 +76,18 @@ function makeGroupIcon(count, bg) {
   });
 }
 
-function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isLocked = false) {
-  const bg = highlighted ? '#4361ee' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
-  const size = highlighted ? 28 : isNearby ? 26 : 22;
-  const fontSize = highlighted ? 13 : isNearby ? 12 : 11;
-  const ring = highlighted ? ',0 0 0 2.5px #4361ee88' : isNearby ? ',0 0 0 2.5px #22c55e66' : isLocked ? ',0 0 0 2.5px #7c3aed66' : '';
+function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isLocked = false, isMyCollection = false) {
+  const bg = highlighted ? '#4361ee'
+    : isMyCollection ? '#0891b2'
+    : isLocked ? MARKER_COLOR.locked
+    : isNearby ? '#22c55e'
+    : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+  const size = highlighted ? 28 : isMyCollection ? 26 : isNearby ? 26 : 22;
+  const fontSize = highlighted ? 13 : 11;
+  const ring = highlighted ? ',0 0 0 2.5px #4361ee88'
+    : isMyCollection ? ',0 0 0 3px #0891b288'
+    : isNearby ? ',0 0 0 2.5px #22c55e66'
+    : isLocked ? ',0 0 0 2.5px #7c3aed66' : '';
   const badge = count > 1
     ? `<div style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);padding:0 2px;">${count}</div>`
     : '';
@@ -124,7 +131,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 function MapMarkers({
   visible, highlightedId, nearbyIds, marking, markCollected,
   navigate, viewMode, isVolunteer, selectedIds, onToggleSelect,
-  volunteerName, collectionGuitarIds,
+  volunteerName, collectionGuitarIds, collectionHighlightIds,
 }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
@@ -224,12 +231,13 @@ function MapMarkers({
       const isHighlighted = group.some(g => g.id === highlightedId);
       const isNearby = nearbyIds.size > 0 && group.some(g => nearbyIds.has(g.id));
       const isLocked = group.every(g => g.inCollection && g.inCollection !== volunteerName);
+      const isMyCollection = !isHighlighted && collectionHighlightIds?.size > 0 && group.some(g => collectionHighlightIds.has(g.id));
       return (
         <Marker
           key={key}
           position={[g0.lat, g0.lon]}
-          icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length, isLocked)}
-          zIndexOffset={isHighlighted ? 1000 : isNearby ? 500 : 0}
+          icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length, isLocked, isMyCollection)}
+          zIndexOffset={isHighlighted ? 1000 : isMyCollection ? 600 : isNearby ? 500 : 0}
         >
           <Popup maxWidth={250}>
             <div className={styles.popup}>
@@ -247,10 +255,11 @@ function MapMarkers({
     const isHighlighted = group.some(g => g.id === highlightedId);
     const isNearby = nearbyIds.size > 0 && group.some(g => nearbyIds.has(g.id));
     const isLocked = group.every(g => g.inCollection && g.inCollection !== volunteerName);
+    const isMyCollection = !isHighlighted && collectionHighlightIds?.size > 0 && group.some(g => collectionHighlightIds.has(g.id));
 
     if (group.length === 1) {
       const g = group[0];
-      const fillColor = isHighlighted ? '#4361ee' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+      const fillColor = isHighlighted ? '#4361ee' : isMyCollection ? '#0891b2' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
       const radius = isHighlighted ? 14 : isNearby ? 11 : 8;
       return (
         <CircleMarker
@@ -266,7 +275,7 @@ function MapMarkers({
     }
 
     const allCollected = group.every(g => g.collected);
-    const bg = isHighlighted ? '#4361ee' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+    const bg = isHighlighted ? '#4361ee' : isMyCollection ? '#0891b2' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
     return (
       <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
         <Popup maxWidth={250}>
@@ -383,6 +392,21 @@ export default function MapView({
   const collectionGuitarIds = useMemo(() =>
     new Set((collection?.guitars || []).map(g => g.id)),
   [collection]);
+
+  // When collection panel is open → highlight all collection guitars on map
+  const collectionHighlightIds = useMemo(() =>
+    collectionView ? collectionGuitarIds : new Set(),
+  [collectionView, collectionGuitarIds]);
+
+  // FitBounds positions for collection panel (cross-reference with map guitars for lat/lon)
+  const collectionFitPositions = useMemo(() => {
+    if (!collectionView || !collection) return null;
+    const positions = collection.guitars
+      .map(cg => guitars.find(g => g.id === cg.id))
+      .filter(g => g && g.lat && g.lon)
+      .map(g => [g.lat, g.lon]);
+    return positions.length > 0 ? positions : null;
+  }, [collectionView, collection, guitars]);
 
   const mapSelectedGuitars = useMemo(() =>
     [...selectedIds]
@@ -571,7 +595,7 @@ export default function MapView({
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapInvalidator fullscreen={mapFullscreen} />
-              <FitBounds positions={fitBoundsPositions} />
+              <FitBounds positions={collectionFitPositions || fitBoundsPositions} />
               <FlyTo target={guitars.find(g => g.id === highlightedId) || null} />
               {userLocation && (
                 <Marker position={[userLocation.lat, userLocation.lon]} icon={makeLocationPin()} zIndexOffset={2000}>
@@ -591,6 +615,7 @@ export default function MapView({
                 onToggleSelect={onToggleSelect}
                 volunteerName={volunteerInfo?.name || ''}
                 collectionGuitarIds={collectionGuitarIds}
+                collectionHighlightIds={collectionHighlightIds}
               />
             </MapContainer>
           )}
@@ -600,6 +625,7 @@ export default function MapView({
           {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
           {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> גיטרות בסביבתי</div>}
+          {isVolunteer && collectionView && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#0891b2'}}/> ברשימתי</div>}
           {isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.locked}}/> בתהליך איסוף</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
