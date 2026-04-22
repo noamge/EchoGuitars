@@ -418,24 +418,17 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
 // ── Add guitar ────────────────────────────────────────────────────────────────
 async function addGuitar(data) {
   const sheets = getSheetsClient();
-  const res = await sheets.spreadsheets.values.get({
+
+  // Read only the ID column (U) to find the max stable ID — avoid scanning the whole sheet
+  const idRes = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A2:W`,
+    range: `${SHEET_TAB}!U2:U`,
   });
-  const rows = res.data.values || [];
-
-  let lastDataRow = 1;
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i][COL.NAME] && rows[i][COL.NAME].trim()) {
-      lastDataRow = i + 2;
-    }
-  }
-  const newRowIndex = lastDataRow + 1;
-
-  const maxId = rows.reduce((max, row) => {
-    const id = Number(row[COL.ID] || 0);
-    return id > max ? id : max;
-  }, rows.length + 1);
+  const idRows = idRes.data.values || [];
+  const maxId = idRows.reduce((max, r) => {
+    const n = Number(r[0] || 0);
+    return n > max ? n : max;
+  }, idRows.length + 1);
   const newId = maxId + 1;
 
   const row = new Array(23).fill('');
@@ -450,14 +443,23 @@ async function addGuitar(data) {
   row[COL.IMAGE_URL]   = data.imageUrl    || '';
   row[COL.ID]          = String(newId);
 
-  await sheets.spreadsheets.values.update({
+  // Use append so Google Sheets auto-extends the Table to include the new row.
+  // values.update wrote to a fixed row index which fell outside the Table range,
+  // causing the row to appear "below the table" without table formatting,
+  // and subsequent Form responses would land between the table and our row.
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A${newRowIndex}:W${newRowIndex}`,
+    range: `${SHEET_TAB}!A2:W`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
 
-  return rowToGuitar(row, newRowIndex);
+  // Extract the actual row index from the response (e.g., "גיליון1!A102:W102" → 102)
+  const updatedRange = appendRes.data.updates?.updatedRange || '';
+  const match = updatedRange.match(/[A-Z]+(\d+):/);
+  const actualRowIndex = match ? parseInt(match[1], 10) : 0;
+
+  return rowToGuitar(row, actualRowIndex);
 }
 
 // ── Delete guitar ─────────────────────────────────────────────────────────────
