@@ -121,16 +121,15 @@ export default function App() {
         <VolunteerLayout
           onLogout={handleLogout}
           volunteerName={volunteerInfo?.name || ''}
-          collection={collection}
-          onRemoveFromCollection={handleRemoveFromCollection}
-          onSendToAdmin={handleSendToAdmin}
-          onMarkCollected={handleMarkCollected}
         >
           <MapView
             isVolunteer
             volunteerInfo={volunteerInfo}
             collection={collection}
             onSaveToCollection={handleSaveToCollection}
+            onRemoveFromCollection={handleRemoveFromCollection}
+            onSendToAdmin={handleSendToAdmin}
+            onMarkCollected={handleMarkCollected}
           />
         </VolunteerLayout>
       </BrowserRouter>

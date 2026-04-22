@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
-import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot } from 'lucide-react';
+import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot, X, CheckCircle, Send } from 'lucide-react';
+import CollectionBubble from '../components/CollectionBubble';
 import styles from './MapView.module.css';
 
 function FlyTo({ target }) {
@@ -279,12 +280,36 @@ function MapMarkers({
   });
 }
 
+const WA_ADMIN = '972547274003';
+
+function buildAdminWaUrl(collection, volunteerName, volunteerAddress) {
+  const guitars = (collection?.guitars || []).filter(g => g.status !== 'approved' && g.status !== 'rejected');
+  const lines = guitars.map(g => {
+    const addr = [g.city, g.street].filter(Boolean).join(', ');
+    return [g.name, addr, g.phone].filter(Boolean).join(' | ');
+  }).join('\n');
+  const msg = `היי, אני ${volunteerName}${volunteerAddress ? ` (${volunteerAddress})` : ''} ואני יכול/ה לאסוף את הגיטרות הבאות:\n\n${lines}`;
+  return `https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(msg)}`;
+}
+
+function guitarStatusLabel(status) {
+  switch (status) {
+    case 'pending':  return { text: 'ממתין לאישור מנהל', color: '#f59e0b' };
+    case 'approved': return { text: 'אושר ✓', color: '#16a34a' };
+    case 'rejected': return { text: 'נדחה', color: '#dc2626' };
+    default:         return null;
+  }
+}
+
 // ── Main MapView ──────────────────────────────────────────────────────────────
 export default function MapView({
   isVolunteer = false,
   volunteerInfo = null,
   collection = null,
   onSaveToCollection = null,
+  onRemoveFromCollection = null,
+  onSendToAdmin = null,
+  onMarkCollected = null,
 }) {
   const navigate = useNavigate();
   const [guitars, setGuitars]             = useState([]);
@@ -305,6 +330,7 @@ export default function MapView({
   const [selectedIds, setSelectedIds]     = useState(new Set());
   const [nearbyLimit, setNearbyLimit]     = useState(10);
   const [savingCollection, setSavingCollection] = useState(false);
+  const [collectionView, setCollectionView] = useState(false); // panel open next to map
 
   useEffect(() => {
     if (!isVolunteer) return;
@@ -391,6 +417,7 @@ export default function MapView({
     await onSaveToCollection(selectedGuitars);
     setSelectedIds(new Set());
     setSavingCollection(false);
+    setCollectionView(true); // auto-open panel after saving
   }, [onSaveToCollection, selectedIds, guitars]);
 
   const fitBoundsPositions = useMemo(() => {
@@ -578,8 +605,98 @@ export default function MapView({
         </div>
       </div>
 
-      {/* ── Nearby side ── */}
+      {/* ── Nearby / Collection side ── */}
       <div className={`${styles.nearbySide} ${nearbyExpanded ? styles.nearbySideExpanded : ''}`}>
+
+        {/* ── Collection panel (shown instead of nearby when open) ── */}
+        {isVolunteer && collectionView && collection && (
+          <div className={styles.collectionPanel}>
+            <div className={styles.collectionPanelHeader}>
+              <div>
+                <h2 className={styles.collectionPanelTitle}>🎸 רשימת האיסוף שלי</h2>
+                <p className={styles.collectionPanelSub}>{collection.guitars.length} גיטרות</p>
+              </div>
+              <button className={styles.collectionCloseBtn} onClick={() => setCollectionView(false)} title="מזער">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={styles.collectionList}>
+              {collection.guitars.length === 0 && (
+                <div className={styles.collectionEmpty}>הרשימה ריקה</div>
+              )}
+              {collection.guitars.map(g => {
+                const sl = guitarStatusLabel(g.status);
+                const isActive  = g.status === 'selected';
+                const isPending = g.status === 'pending';
+                return (
+                  <div
+                    key={g.id}
+                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isPending ? styles.nearbyCardPending : ''}`}
+                    onClick={() => setHighlightedId(g.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className={styles.nearbyInfo}>
+                      <div className={styles.nearbyName}>{g.name}</div>
+                      <div className={styles.nearbyAddress}>
+                        <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
+                      </div>
+                      {g.phone && (
+                        <div className={styles.nearbyPhoneBlock}>
+                          <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
+                          <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}>
+                            <WaIcon /><span className={styles.waBtnLabel}>לתיאום</span>
+                          </a>
+                        </div>
+                      )}
+                      {sl && <div style={{ fontSize: 11, fontWeight: 700, color: sl.color, marginTop: 3 }}>{sl.text}</div>}
+                    </div>
+                    <div className={styles.collectionCardActions}>
+                      {isActive && (
+                        <>
+                          <button
+                            className={styles.collectedBtn}
+                            onClick={e => { e.stopPropagation(); onMarkCollected?.(g.id); }}
+                            title="סמן שאספת"
+                          >
+                            <CheckCircle size={13} /> נאסף
+                          </button>
+                          <button
+                            className={styles.removeCardBtn}
+                            onClick={e => { e.stopPropagation(); onRemoveFromCollection?.(g.id); }}
+                            title="הסר מרשימה"
+                          >
+                            <X size={13} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={styles.collectionPanelFooter}>
+              <a
+                href={buildAdminWaUrl(collection, volunteerInfo?.name || '', volunteerInfo?.address || '')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.adminWaBtn}
+                onClick={onSendToAdmin}
+              >
+                <WaIcon />
+                {collection.sentToAdmin ? 'שלח שוב לאישור מנהל' : 'לאישור מנהל'}
+              </a>
+              {collection.sentToAdmin && (
+                <div className={styles.alreadySent}><Send size={12} /> נשלח למנהל בעבר</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Nearby list (hidden when collection panel is open) ── */}
+        {!(isVolunteer && collectionView && collection) && (
+          <>
         <div className={styles.nearbyHeader}>
           <MapPin size={18} />
           <h2>{isVolunteer && userLocation ? 'לאיסוף גיטרות בקרבתי:' : 'המלצות לאיסוף בקרבתי'}</h2>
@@ -730,6 +847,8 @@ export default function MapView({
             הרחב חיפוש — Top 15
           </button>
         )}
+          </>
+        )}
       </div>
 
       {/* ── Volunteer FAB: "המשך" → save to backend ── */}
@@ -742,6 +861,14 @@ export default function MapView({
         >
           {savingCollection ? 'שומר...' : `✓ המשך (${selectedIds.size})`}
         </button>
+      )}
+
+      {/* ── Collection bubble — shown when panel is closed ── */}
+      {isVolunteer && !collectionView && (
+        <CollectionBubble
+          collection={collection}
+          onClick={() => setCollectionView(true)}
+        />
       )}
     </div>
   );
