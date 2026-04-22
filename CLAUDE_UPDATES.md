@@ -48,7 +48,7 @@ backend/src/
     aiService.js              — קריאות ל-Anthropic API
 ```
 
-### מבנה Google Sheets (עמודות A–V)
+### מבנה Google Sheets (עמודות A–W)
 | עמודה | שדה | מפתח בקוד |
 |-------|-----|-----------|
 | A | זמן הגשה | SUBMISSION_TIME |
@@ -73,6 +73,7 @@ backend/src/
 | T | נתרם ל | DONATED_TO |
 | U | מזהה יציב | ID |
 | V | קישור תמונה | IMAGE_URL |
+| W | נעול למתנדב | IN_COLLECTION (שם מתנדב / ריק) |
 
 ### מצב Auth
 - **admin:** localStorage `echo_auth=1`, `echo_role=admin` → רואה הכל
