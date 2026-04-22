@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { BarChart2, Map, ClipboardList, Table, MapPin, X, Menu } from 'lucide-react';
-import { getAddressIssuesCount } from '../api/client';
+import { BarChart2, Map, ClipboardList, Table, MapPin, Users, X, Menu } from 'lucide-react';
+import { getAddressIssuesCount, getVolunteerPendingCount } from '../api/client';
 import styles from './Layout.module.css';
 
 const nav = [
@@ -9,21 +9,23 @@ const nav = [
   { to: '/map',            label: 'מפה',               Icon: Map },
   { to: '/collect',        label: 'עדכון מהיר',        Icon: ClipboardList },
   { to: '/table',          label: 'טבלת נתונים',       Icon: Table },
-  { to: '/address-review', label: 'כתובות לא מזוהות', Icon: MapPin, badgeKey: 'addressIssues' },
+  { to: '/address-review', label: 'כתובות לא מזוהות', Icon: MapPin,  badgeKey: 'addressIssues' },
+  { to: '/volunteers',     label: 'מתנדבים',           Icon: Users,   badgeKey: 'volunteers' },
 ];
 
 export default function Layout() {
-  const [open, setOpen]               = useState(false);
-  const [addressBadge, setAddressBadge] = useState(0);
+  const [open, setOpen]                     = useState(false);
+  const [addressBadge, setAddressBadge]     = useState(0);
+  const [volunteerBadge, setVolunteerBadge] = useState(0);
 
   useEffect(() => {
-    getAddressIssuesCount()
-      .then(setAddressBadge)
-      .catch(() => {});
+    getAddressIssuesCount().then(setAddressBadge).catch(() => {});
+    getVolunteerPendingCount().then(setVolunteerBadge).catch(() => {});
   }, []);
 
   const getBadge = (key) => {
     if (key === 'addressIssues') return addressBadge;
+    if (key === 'volunteers')    return volunteerBadge;
     return 0;
   };
 

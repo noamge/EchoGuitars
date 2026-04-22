@@ -1,6 +1,15 @@
+import CollectionBubble from './CollectionBubble';
 import styles from './VolunteerLayout.module.css';
 
-export default function VolunteerLayout({ children, onLogout }) {
+export default function VolunteerLayout({
+  children,
+  onLogout,
+  volunteerName,
+  collection,
+  onRemoveFromCollection,
+  onSendToAdmin,
+  onMarkCollected,
+}) {
   return (
     <div className={styles.shell}>
       <header className={styles.topBar}>
@@ -9,13 +18,28 @@ export default function VolunteerLayout({ children, onLogout }) {
           <span className={styles.logoText}>EchoGuitars</span>
           <span className={styles.badge}>מתנדב לאיסוף</span>
         </div>
-        <button className={styles.logoutBtn} onClick={onLogout}>
-          יציאה
-        </button>
+        <div className={styles.right}>
+          {volunteerName && (
+            <span className={styles.greeting}>שלום, {volunteerName}</span>
+          )}
+          <button className={styles.logoutBtn} onClick={onLogout}>
+            יציאה
+          </button>
+        </div>
       </header>
+
       <div className={styles.content}>
         {children}
       </div>
+
+      <CollectionBubble
+        collection={collection}
+        volunteerName={volunteerName}
+        volunteerAddress={collection?.volunteerAddress || ''}
+        onRemove={onRemoveFromCollection}
+        onSendToAdmin={onSendToAdmin}
+        onMarkCollected={onMarkCollected}
+      />
     </div>
   );
 }

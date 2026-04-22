@@ -514,6 +514,12 @@
   background: #f0fdf4 !important;
 }
 
+.nearbyCardLocked {
+  border-color: #7c3aed !important;
+  background: #f5f3ff !important;
+  opacity: 0.85;
+}
+
 .selectBtn {
   width: 26px; height: 26px; border-radius: 50%;
   border: 2px solid #d1d5db;

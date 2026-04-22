@@ -7,6 +7,7 @@ const guitarsRouter = require('./routes/guitars');
 const donorsRouter = require('./routes/donors');
 const uploadRouter = require('./routes/upload');
 const aiRouter = require('./routes/ai');
+const volunteersRouter = require('./routes/volunteers');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,6 +42,7 @@ app.use('/api/guitars', guitarsRouter);
 app.use('/api/donors', donorsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/volunteers', volunteersRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

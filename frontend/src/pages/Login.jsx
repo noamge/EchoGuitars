@@ -4,114 +4,152 @@ const ADMIN_PASSWORD     = 'JANIS123';
 const VOLUNTEER_PASSWORD = 'JANIS';
 
 export default function Login({ onLogin }) {
-  const [mode, setMode]         = useState(null); // 'admin' | 'volunteer' | null
-  const [password, setPassword] = useState('');
-  const [error, setError]       = useState(false);
+  const [adminMode, setAdminMode]   = useState(false);
+  const [adminPw, setAdminPw]       = useState('');
+  const [adminErr, setAdminErr]     = useState(false);
 
-  const handleSubmit = (e) => {
+  const [volName, setVolName]       = useState('');
+  const [volAddress, setVolAddress] = useState('');
+  const [volPw, setVolPw]           = useState('');
+  const [volErr, setVolErr]         = useState('');
+
+  const handleVolunteer = (e) => {
     e.preventDefault();
-    const expected = mode === 'admin' ? ADMIN_PASSWORD : VOLUNTEER_PASSWORD;
-    if (password === expected) {
-      localStorage.setItem('echo_auth', '1');
-      localStorage.setItem('echo_role', mode);
-      onLogin(mode);
-    } else {
-      setError(true);
-      setPassword('');
-    }
+    if (!volName.trim()) { setVolErr('יש להזין שם מלא'); return; }
+    if (volPw !== VOLUNTEER_PASSWORD) { setVolErr('סיסמה שגויה'); setVolPw(''); return; }
+    const info = { name: volName.trim(), address: volAddress.trim() };
+    localStorage.setItem('echo_auth', '1');
+    localStorage.setItem('echo_role', 'volunteer');
+    localStorage.setItem('volunteer_info', JSON.stringify(info));
+    onLogin('volunteer', info);
+  };
+
+  const handleAdmin = (e) => {
+    e.preventDefault();
+    if (adminPw !== ADMIN_PASSWORD) { setAdminErr(true); setAdminPw(''); return; }
+    localStorage.setItem('echo_auth', '1');
+    localStorage.setItem('echo_role', 'admin');
+    onLogin('admin', null);
   };
 
   const card = {
-    background: 'var(--bg-card)', borderRadius: 16, padding: '40px 36px',
-    boxShadow: 'var(--shadow)', width: 340, textAlign: 'center', direction: 'rtl',
+    background: 'var(--bg-card)', borderRadius: 16, padding: '36px 32px',
+    boxShadow: 'var(--shadow)', width: 360, direction: 'rtl',
   };
 
-  // ── Mode selection screen ──────────────────────────────────────────────────
-  if (!mode) {
+  // ── Admin popup ─────────────────────────────────────────────────────────────
+  if (adminMode) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
         <div style={card}>
-          <div style={{ fontSize: 52, marginBottom: 10 }}>🎸</div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 6 }}>EchoGuitars</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>גיטרה לכל ילד</p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <button
-              onClick={() => setMode('volunteer')}
+          <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 8 }}>🔐</div>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary-dark)', textAlign: 'center', marginBottom: 20 }}>כניסה כמנהל</h1>
+          <form onSubmit={handleAdmin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <input
+              type="password"
+              placeholder="סיסמת מנהל..."
+              value={adminPw}
+              onChange={e => { setAdminPw(e.target.value); setAdminErr(false); }}
+              autoFocus
               style={{
-                padding: '14px', borderRadius: 10, border: '2px solid var(--primary)',
-                background: 'transparent', color: 'var(--primary)',
-                fontSize: 15, fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'background 0.15s, color 0.15s',
+                padding: '10px 14px', border: `1.5px solid ${adminErr ? '#ef4444' : 'var(--border)'}`,
+                borderRadius: 8, fontSize: 15, textAlign: 'center', direction: 'ltr',
               }}
-              onMouseOver={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary)'; }}
-            >
-              🙋 מתנדב לאיסוף גיטרה
+            />
+            {adminErr && <p style={{ color: '#ef4444', fontSize: 13, margin: 0, textAlign: 'center' }}>סיסמה שגויה</p>}
+            <button type="submit" style={{
+              padding: '11px', background: 'var(--primary)', color: '#fff',
+              border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            }}>כניסה</button>
+            <button type="button" onClick={() => { setAdminMode(false); setAdminErr(false); setAdminPw(''); }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>
+              חזרה
             </button>
-
-            <button
-              onClick={() => setMode('admin')}
-              style={{
-                padding: '14px', borderRadius: 10, border: '2px solid var(--border)',
-                background: 'transparent', color: 'var(--text-muted)',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                transition: 'border-color 0.15s, color 0.15s',
-              }}
-              onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--primary-light)'; e.currentTarget.style.color = 'var(--primary)'; }}
-              onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-            >
-              🔐 כניסה כמנהל
-            </button>
-          </div>
+          </form>
         </div>
       </div>
     );
   }
 
-  // ── Password screen ────────────────────────────────────────────────────────
+  // ── Main volunteer login screen ─────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
       <div style={card}>
-        <div style={{ fontSize: 52, marginBottom: 10 }}>🎸</div>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }}>
-          {mode === 'admin' ? 'כניסה כמנהל' : 'מתנדב לאיסוף גיטרה'}
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>הזן סיסמה להמשך</p>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <div style={{ fontSize: 48, marginBottom: 6 }}>🎸</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }}>EchoGuitars</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>גיטרה לכל ילד</p>
+        </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <input
-            type="password"
-            placeholder="סיסמה..."
-            value={password}
-            onChange={e => { setPassword(e.target.value); setError(false); }}
-            autoFocus
-            style={{
-              padding: '10px 14px', border: `1.5px solid ${error ? '#ef4444' : 'var(--border)'}`,
-              borderRadius: 8, fontSize: 15, textAlign: 'center', direction: 'ltr',
-            }}
-          />
-          {error && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>סיסמה שגויה</p>}
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>התחבר כמתנדב</h2>
+
+        <form onSubmit={handleVolunteer} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>שם מלא *</label>
+            <input
+              placeholder="השם שלך..."
+              value={volName}
+              onChange={e => { setVolName(e.target.value); setVolErr(''); }}
+              autoFocus
+              style={inputStyle()}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>כתובת (לא חובה)</label>
+            <input
+              placeholder="עיר / רחוב..."
+              value={volAddress}
+              onChange={e => setVolAddress(e.target.value)}
+              style={inputStyle()}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>סיסמה *</label>
+            <input
+              type="password"
+              placeholder="סיסמת מתנדבים..."
+              value={volPw}
+              onChange={e => { setVolPw(e.target.value); setVolErr(''); }}
+              style={inputStyle(!!volErr)}
+              dir="ltr"
+            />
+          </div>
+
+          {volErr && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{volErr}</p>}
+
           <button type="submit" style={{
-            padding: '11px', background: 'var(--primary)', color: '#fff',
+            marginTop: 4, padding: '12px', background: 'var(--primary)', color: '#fff',
             border: 'none', borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: 'pointer',
           }}>
-            כניסה
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode(null); setPassword(''); setError(false); }}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-muted)',
-              fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0,
-            }}
-          >
-            חזרה
+            🙋 כניסה כמתנדב
           </button>
         </form>
+
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+          <button
+            onClick={() => setAdminMode(true)}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text-muted)',
+              fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
+            }}
+          >
+            🔐 כניסה כמנהל
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function inputStyle(error = false) {
+  return {
+    padding: '9px 12px',
+    border: `1.5px solid ${error ? '#ef4444' : 'var(--border)'}`,
+    borderRadius: 8,
+    fontSize: 14,
+    background: 'var(--bg)',
+    color: 'var(--text)',
+  };
 }

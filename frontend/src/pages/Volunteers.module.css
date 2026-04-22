@@ -1,0 +1,230 @@
+.page {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  direction: rtl;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+.header h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
+.header p  { color: var(--text-muted); font-size: 14px; margin: 0; }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tabActive {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tabBadge {
+  background: #ef4444;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+.tabBadgeGray {
+  background: var(--border);
+  color: var(--text-muted);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.section { display: flex; flex-direction: column; gap: 16px; }
+.loading { color: var(--text-muted); font-size: 14px; padding: 20px 0; }
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 40px 0;
+}
+
+/* ── Collection card ── */
+.collectionCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+}
+.collectionCardHistory { opacity: 0.85; }
+
+.collectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.volunteerName {
+  font-weight: 700;
+  font-size: 15px;
+  display: block;
+  margin-bottom: 4px;
+}
+.volunteerAddr {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: block;
+}
+.collectionMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.sentBadge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.statusLabel { font-size: 12px; font-weight: 700; }
+.dateLabel { font-size: 11px; color: var(--text-muted); }
+
+/* ── Guitar list ── */
+.guitarList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.guitarChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.guitarChip:first-child { border-top: none; }
+.guitarChipInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.guitarChipName { font-weight: 700; font-size: 14px; }
+.guitarChipCity { font-size: 12px; color: var(--text-muted); }
+.guitarChipPhone { font-size: 12px; color: var(--primary); }
+
+.guitarChipRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.guitarStatusBadge {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.approvalBtns {
+  display: flex;
+  gap: 6px;
+}
+.approveBtn {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.approveBtn:hover:not(:disabled) { background: #15803d; }
+.approveBtn:disabled { opacity: 0.6; cursor: wait; }
+.rejectBtn {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.rejectBtn:hover:not(:disabled) { background: #b91c1c; }
+.rejectBtn:disabled { opacity: 0.6; cursor: wait; }
+
+/* ── Log table ── */
+.logTable {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13px;
+}
+.logHeader {
+  display: grid;
+  grid-template-columns: 120px 100px 180px 130px 1fr;
+  gap: 0;
+  background: var(--bg);
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.logRow {
+  display: grid;
+  grid-template-columns: 120px 100px 180px 130px 1fr;
+  gap: 0;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.logRow:last-child { border-bottom: none; }
+.logRow:hover { background: var(--bg); }
+.logTime { color: var(--text-muted); font-size: 12px; }
+.logActor { font-weight: 600; }
+.logAction { }
+.logGuitar { color: var(--primary); }
+.logDetails { color: var(--text-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 700px) {
+  .page { padding: 16px; }
+  .logHeader, .logRow {
+    grid-template-columns: 90px 80px 1fr;
+  }
+  .logGuitar, .logDetails { display: none; }
+  .collectionHeader { flex-direction: column; }
+}

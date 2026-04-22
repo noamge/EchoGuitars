@@ -72,3 +72,36 @@ export const addGuitar = (data) =>
 
 export const deleteGuitar = (id) =>
   api.delete(`/guitars/${id}`).then(r => r.data);
+
+// ── Volunteers ────────────────────────────────────────────────────────────────
+
+export const getVolunteerCollections = () =>
+  api.get('/volunteers/collections').then(r => r.data);
+
+export const getVolunteerPendingCount = () =>
+  api.get('/volunteers/pending-count').then(r => r.data.count);
+
+export const getVolunteerCollection = (id) =>
+  api.get(`/volunteers/collection/${id}`).then(r => r.data);
+
+/** Create new or extend existing collection. Returns updated collection object. */
+export const saveVolunteerCollection = (data) =>
+  api.post('/volunteers/collection', data).then(r => r.data);
+
+export const removeGuitarFromCollection = (collectionId, guitarId) =>
+  api.delete(`/volunteers/collection/${collectionId}/guitar/${guitarId}`).then(r => r.data);
+
+export const sendCollectionToAdmin = (collectionId) =>
+  api.patch(`/volunteers/collection/${collectionId}/send`).then(r => r.data);
+
+export const markGuitarCollected = (collectionId, guitarId) =>
+  api.patch(`/volunteers/collection/${collectionId}/mark-collected`, { guitarId }).then(r => r.data);
+
+export const approveGuitarCollection = (collectionId, guitarId) =>
+  api.patch(`/volunteers/collection/${collectionId}/approve`, { guitarId }).then(r => r.data);
+
+export const rejectGuitarCollection = (collectionId, guitarId) =>
+  api.patch(`/volunteers/collection/${collectionId}/reject`, { guitarId }).then(r => r.data);
+
+export const getVolunteerLog = () =>
+  api.get('/volunteers/log').then(r => r.data);
