@@ -415,24 +415,50 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
   return { id: stableId, rowIndex, city: newCity, street: newStreet };
 }
 
-// ── Extend banded range to cover a new row (keeps new rows inside the table visually) ──
-async function extendBandingToRow(sheets, targetRow1Based) {
+// ── Apply row formatting: extend banding + set checkbox validation for boolean columns ──
+async function applyRowFormatting(sheets, targetRow1Based) {
   const meta = await sheets.spreadsheets.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    fields: 'sheets(properties.title,bandedRanges)',
+    fields: 'sheets(properties,bandedRanges)',
   });
   const tab = meta.data.sheets.find(s => s.properties.title === SHEET_TAB);
-  if (!tab || !tab.bandedRanges?.length) return;
+  if (!tab) return;
 
-  const needed = targetRow1Based + 1; // exclusive end in 0-based = row1based + 1
-  const requests = tab.bandedRanges
-    .filter(br => br.range.endRowIndex < needed)
-    .map(br => ({
-      updateBanding: {
-        bandedRange: { bandedRangeId: br.bandedRangeId, range: { ...br.range, endRowIndex: needed } },
-        fields: 'range.endRowIndex',
+  const tabId    = tab.properties.sheetId;
+  const rowIdx0  = targetRow1Based - 1; // 0-based start
+  const needed   = targetRow1Based + 1; // exclusive end for banding (0-based)
+
+  const requests = [];
+
+  // Extend banded range so the row gets table formatting
+  for (const br of tab.bandedRanges || []) {
+    if (br.range.endRowIndex < needed) {
+      requests.push({
+        updateBanding: {
+          bandedRange: { bandedRangeId: br.bandedRangeId, range: { ...br.range, endRowIndex: needed } },
+          fields: 'range.endRowIndex',
+        },
+      });
+    }
+  }
+
+  // Set BOOLEAN (checkbox) validation for collected and repaired columns
+  for (const colIdx of [COL.COLLECTED, COL.REPAIRED]) {
+    requests.push({
+      repeatCell: {
+        range: {
+          sheetId: tabId,
+          startRowIndex: rowIdx0,
+          endRowIndex:   rowIdx0 + 1,
+          startColumnIndex: colIdx,
+          endColumnIndex:   colIdx + 1,
+        },
+        cell: { dataValidation: { condition: { type: 'BOOLEAN' } } },
+        fields: 'dataValidation',
       },
-    }));
+    });
+  }
+
   if (requests.length) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -488,9 +514,9 @@ async function addGuitar(data) {
     requestBody: { values: [row] },
   });
 
-  // Extend the banded range so the new row gets table formatting (non-fatal if it fails)
-  try { await extendBandingToRow(sheets, newRowIndex); } catch (e) {
-    console.warn('extendBanding non-fatal:', e.message);
+  // Extend banded range + set checkbox validation (non-fatal if it fails)
+  try { await applyRowFormatting(sheets, newRowIndex); } catch (e) {
+    console.warn('applyRowFormatting non-fatal:', e.message);
   }
 
   return rowToGuitar(row, newRowIndex);
