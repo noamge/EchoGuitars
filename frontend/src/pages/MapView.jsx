@@ -339,8 +339,10 @@ export default function MapView({
   const [selectedIds, setSelectedIds]     = useState(new Set());
   const [nearbyLimit, setNearbyLimit]     = useState(10);
   const [savingCollection, setSavingCollection] = useState(false);
-  const [collectionView, setCollectionView] = useState(false); // panel open next to map
-  const [confirmCollectedId, setConfirmCollectedId] = useState(null); // guitar id awaiting confirm
+  const [collectionView, setCollectionView] = useState(false);
+  const [removingGuitarId, setRemovingGuitarId] = useState(null); // fade-out animation
+  const [confirmModal, setConfirmModal]   = useState(null); // { id, name, city, phone }
+  const [thankyouModal, setThankyouModal] = useState(null); // { name, city }
 
   useEffect(() => {
     if (!isVolunteer) return;
@@ -430,6 +432,21 @@ export default function MapView({
       return next;
     });
   }, [guitars, volunteerInfo, collectionGuitarIds]);
+
+  // Fade-out then remove
+  const handleRemoveGuitar = useCallback((guitarId) => {
+    setRemovingGuitarId(guitarId);
+    setTimeout(() => {
+      onRemoveFromCollection?.(guitarId);
+      setRemovingGuitarId(null);
+    }, 320);
+  }, [onRemoveFromCollection]);
+
+  // Build WhatsApp URL for "I collected this guitar"
+  const buildCollectedWaUrl = (guitar) => {
+    const msg = `היי, אספתי את הגיטרה של ${guitar.name}${guitar.city ? ` מ${guitar.city}` : ''} 🎸✓`;
+    return `https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(msg)}`;
+  };
 
   // Called when volunteer clicks "המשך"
   const handleSaveCollection = useCallback(async () => {
@@ -654,12 +671,13 @@ export default function MapView({
               )}
               {collection.guitars.map(g => {
                 const sl = guitarStatusLabel(g.status);
-                const isActive  = g.status === 'selected';
-                const isPending = g.status === 'pending';
+                const isActive   = g.status === 'selected';
+                const isDone     = g.status === 'approved';
+                const isRemoving = removingGuitarId === g.id;
                 return (
                   <div
                     key={g.id}
-                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isPending ? styles.nearbyCardPending : ''}`}
+                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isDone ? styles.nearbyCardDone : ''} ${isRemoving ? styles.nearbyCardRemoving : ''}`}
                     onClick={() => setHighlightedId(g.id)}
                     style={{ cursor: 'pointer' }}
                   >
@@ -668,7 +686,7 @@ export default function MapView({
                       <div className={styles.nearbyAddress}>
                         <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
                       </div>
-                      {g.phone && (
+                      {g.phone && !isDone && (
                         <div className={styles.nearbyPhoneBlock}>
                           <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
                           <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}>
@@ -677,58 +695,36 @@ export default function MapView({
                         </div>
                       )}
                       {sl && <div style={{ fontSize: 11, fontWeight: 700, color: sl.color, marginTop: 3 }}>{sl.text}</div>}
+                      {isDone && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 700 }}>✓ נאסף</div>}
                     </div>
-                    <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
-                      {isActive && confirmCollectedId !== g.id && (
-                        <>
-                          <button
-                            className={styles.collectedBtn}
-                            onClick={() => setConfirmCollectedId(g.id)}
-                            title="סמן שאספת"
-                          >
-                            <CheckCircle size={13} /> נאסף
-                          </button>
-                          <button
-                            className={styles.removeCardBtn}
-                            onClick={() => onRemoveFromCollection?.(g.id)}
-                            title="הסר מרשימה"
-                          >
-                            <X size={14} />
-                          </button>
-                        </>
-                      )}
-                      {isActive && confirmCollectedId === g.id && (
-                        <div className={styles.confirmRow}>
-                          <span className={styles.confirmText}>אספת?</span>
-                          <button className={styles.confirmYes} onClick={() => { onMarkCollected?.(g.id); setConfirmCollectedId(null); }}>
-                            ✓ כן
-                          </button>
-                          <button className={styles.confirmNo} onClick={() => setConfirmCollectedId(null)}>
-                            ✕
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {isActive && (
+                      <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
+                        <button
+                          className={styles.collectedBtn}
+                          onClick={() => setConfirmModal({ id: g.id, name: g.name, city: g.city, phone: g.phone })}
+                          title="סמן שאספת"
+                        >
+                          <CheckCircle size={15} /> נאסף
+                        </button>
+                        <button
+                          className={styles.removeCardBtn}
+                          onClick={() => handleRemoveGuitar(g.id)}
+                          title="הסר מרשימה"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            <div className={styles.collectionPanelFooter}>
-              <a
-                href={buildAdminWaUrl(collection, volunteerInfo?.name || '', volunteerInfo?.address || '')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.adminWaBtn}
-                onClick={onSendToAdmin}
-              >
-                <WaIcon />
-                {collection.sentToAdmin ? 'שלח שוב לאישור מנהל' : 'לאישור מנהל'}
-              </a>
-              {collection.sentToAdmin && (
-                <div className={styles.alreadySent}><Send size={12} /> נשלח למנהל בעבר</div>
-              )}
-            </div>
+            {collection.sentToAdmin && (
+              <div className={styles.alreadySent} style={{ padding: '8px 14px', borderTop: '1px solid var(--border)' }}>
+                <Send size={12} /> נשלח למנהל בעבר
+              </div>
+            )}
           </div>
         )}
 
@@ -889,7 +885,7 @@ export default function MapView({
         )}
       </div>
 
-      {/* ── Volunteer FAB: "המשך" → save to backend ── */}
+      {/* ── FAB: "המשך" ── */}
       {isVolunteer && selectedIds.size > 0 && (
         <button
           className={styles.canCollectFab}
@@ -901,12 +897,96 @@ export default function MapView({
         </button>
       )}
 
+      {/* ── FAB: "לאישור מנהל" (WhatsApp) ── */}
+      {isVolunteer && collection && collection.guitars.some(g => g.status === 'selected') && (
+        <a
+          href={buildAdminWaUrl(collection, volunteerInfo?.name || '', volunteerInfo?.address || '')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.adminWaFab}
+          onClick={onSendToAdmin}
+        >
+          <WaIcon />
+          {collection.sentToAdmin ? 'שלח שוב למנהל' : 'לאישור מנהל'}
+        </a>
+      )}
+
       {/* ── Collection bubble — shown when panel is closed ── */}
       {isVolunteer && !collectionView && (
         <CollectionBubble
           collection={collection}
           onClick={() => setCollectionView(true)}
         />
+      )}
+
+      {/* ── Floating WhatsApp contact button (always visible for volunteers) ── */}
+      {isVolunteer && (
+        <a
+          href={`https://wa.me/${WA_ADMIN}?text=${encodeURIComponent('היי, אני מתנדב באקו ויש לי שאלה 🎸')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.contactWaFab}
+          title="צור קשר"
+        >
+          <svg width="26" height="26" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
+          </svg>
+        </a>
+      )}
+
+      {/* ── Confirmation modal (centered) ── */}
+      {confirmModal && (
+        <div className={styles.modalOverlay} onClick={() => setConfirmModal(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalIcon}>🎸</div>
+            <h3 className={styles.modalTitle}>אספת את הגיטרה?</h3>
+            <p className={styles.modalBody}>
+              {confirmModal.name}
+              {confirmModal.city ? ` — ${confirmModal.city}` : ''}
+            </p>
+            <div className={styles.modalBtns}>
+              <button
+                className={styles.modalYes}
+                onClick={() => {
+                  onMarkCollected?.(confirmModal.id);
+                  setThankyouModal({ name: confirmModal.name, city: confirmModal.city, phone: confirmModal.phone });
+                  setConfirmModal(null);
+                }}
+              >
+                ✓ כן, אספתי!
+              </button>
+              <button className={styles.modalNo} onClick={() => setConfirmModal(null)}>
+                ✕ לא עדיין
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Thank-you modal after confirming collection ── */}
+      {thankyouModal && (
+        <div className={styles.modalOverlay} onClick={() => setThankyouModal(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalIcon}>🙏</div>
+            <h3 className={styles.modalTitle}>תודה רבה על איסוף הגיטרה!</h3>
+            <p className={styles.modalBody}>
+              עדכן את מנהל המיזם שאספת את הגיטרה של <strong>{thankyouModal.name}</strong>
+            </p>
+            <a
+              href={buildCollectedWaUrl(thankyouModal)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.thankyouWaBtn}
+              onClick={() => setThankyouModal(null)}
+            >
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
+              </svg>
+              עדכן את נועם בוואטסאפ
+            </a>
+            <button className={styles.modalClose} onClick={() => setThankyouModal(null)}>סגור</button>
+          </div>
+        </div>
       )}
     </div>
   );

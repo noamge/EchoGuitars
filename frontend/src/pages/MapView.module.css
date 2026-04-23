@@ -610,24 +610,145 @@
 .removeCardBtn:hover { background: #fecaca; }
 
 /* ── Inline confirm ── */
-.confirmRow {
-  display: flex; align-items: center; gap: 5px;
-  background: #fffbeb; border: 1.5px solid #f59e0b;
-  border-radius: 8px; padding: 4px 7px;
+/* ── Guitar fade-out ── */
+.nearbyCardRemoving {
+  opacity: 0 !important;
+  transform: translateX(30px) !important;
+  transition: opacity 0.3s ease, transform 0.3s ease !important;
+  pointer-events: none;
 }
-.confirmText { font-size: 11px; font-weight: 700; color: #92400e; white-space: nowrap; }
-.confirmYes {
+
+/* ── Collected / approved state ── */
+.nearbyCardDone {
+  border-color: #16a34a !important;
+  background: #f0fdf4 !important;
+}
+
+/* ── Collection card buttons: side by side ── */
+.collectionCardActions {
+  display: flex;
+  flex-direction: row !important;
+  gap: 7px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.collectedBtn {
+  display: flex; align-items: center; gap: 4px;
+  background: #16a34a; color: #fff;
+  border: none; border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.collectedBtn:hover { background: #15803d; }
+.removeCardBtn {
+  display: flex; align-items: center; justify-content: center;
+  background: #fee2e2; border: 1.5px solid #fca5a5;
+  border-radius: 8px; padding: 7px 10px; cursor: pointer;
+  color: #dc2626; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.removeCardBtn:hover { background: #fecaca; }
+
+/* ── Admin WA FAB ── */
+.adminWaFab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 901;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #25d366;
+  color: #fff;
+  border-radius: 50px;
+  padding: 11px 20px 11px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.adminWaFab:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+}
+
+/* ── Floating WA contact button ── */
+.contactWaFab {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 900;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #25d366;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  text-decoration: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.contactWaFab:hover { opacity: 0.9; transform: scale(1.1); }
+
+/* ── Centered modals ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px 28px 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  direction: rtl;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.modalIcon { font-size: 44px; margin-bottom: 12px; }
+.modalTitle { font-size: 18px; font-weight: 800; color: #111; margin: 0 0 8px; }
+.modalBody  { font-size: 14px; color: #6b7280; margin: 0 0 20px; line-height: 1.5; }
+.modalBtns  { display: flex; flex-direction: column; gap: 10px; }
+.modalYes {
   background: #16a34a; color: #fff; border: none;
-  border-radius: 6px; padding: 4px 9px; font-size: 12px;
-  font-weight: 700; cursor: pointer;
+  border-radius: 10px; padding: 13px; font-size: 15px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
 }
-.confirmYes:hover { background: #15803d; }
-.confirmNo {
-  background: none; color: #6b7280; border: 1px solid #d1d5db;
-  border-radius: 6px; padding: 4px 7px; font-size: 12px;
-  cursor: pointer;
+.modalYes:hover { background: #15803d; }
+.modalNo {
+  background: none; color: #6b7280; border: 1.5px solid #e5e7eb;
+  border-radius: 10px; padding: 11px; font-size: 14px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.confirmNo:hover { background: #f3f4f6; }
+.modalNo:hover { background: #f9fafb; }
+.thankyouWaBtn {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: #25d366; color: #fff; border-radius: 10px;
+  padding: 13px; font-size: 15px; font-weight: 700;
+  text-decoration: none; margin-bottom: 10px;
+  transition: background 0.15s;
+}
+.thankyouWaBtn:hover { background: #16a34a; }
+.modalClose {
+  background: none; color: #9ca3af; border: none;
+  font-size: 13px; cursor: pointer; font-family: inherit;
+  padding: 4px; text-decoration: underline;
+}
 
 .collectionPanelFooter {
   padding: 12px 14px;

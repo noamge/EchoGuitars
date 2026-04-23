@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logVolunteerLogin } from '../api/client';
 import styles from './Login.module.css';
 
 const ADMIN_PASSWORD     = 'JANIS123';
@@ -107,6 +108,7 @@ export default function Login({ onLogin }) {
     localStorage.setItem('echo_auth', '1');
     localStorage.setItem('echo_role', 'volunteer');
     localStorage.setItem('volunteer_info', JSON.stringify(info));
+    logVolunteerLogin(info.name, info.address).catch(() => {});
     onLogin('volunteer', info);
   };
 
@@ -167,7 +169,7 @@ export default function Login({ onLogin }) {
               </div>
               <div style={s.fieldGroup}>
                 <label style={s.label}>כתובת (לא חובה)</label>
-                <input placeholder="עיר / רחוב — לשימוש כנקודת מוצא במפה"
+                <input placeholder="כתובת המתנדב אליה תגיע הגיטרה"
                   value={volAddress} onChange={e => setVolAddress(e.target.value)} style={s.input} />
               </div>
               <div style={s.fieldGroup}>

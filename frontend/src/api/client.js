@@ -105,3 +105,6 @@ export const rejectGuitarCollection = (collectionId, guitarId) =>
 
 export const getVolunteerLog = () =>
   api.get('/volunteers/log').then(r => r.data);
+
+export const logVolunteerLogin = (volunteerName, volunteerAddress) =>
+  api.post('/volunteers/log-login', { volunteerName, volunteerAddress }).then(r => r.data);

@@ -75,22 +75,22 @@ export default function App() {
     }
   }, [volunteerInfo, collection]);
 
-  const handleRemoveFromCollection = useCallback(async (guitarId) => {
+  const handleRemoveFromCollection = useCallback((guitarId) => {
     if (!collection) return;
-    try {
-      await removeGuitarFromCollection(collection.id, guitarId);
-      setCollection(prev => {
-        if (!prev) return prev;
-        const remaining = prev.guitars.filter(g => g.id !== guitarId);
-        if (remaining.length === 0) {
-          localStorage.removeItem('volunteer_collection_id');
-          return null;
-        }
-        return { ...prev, guitars: remaining };
-      });
-    } catch (err) {
-      alert('שגיאה: ' + err.message);
-    }
+    // Optimistic update — state changes immediately (animation already played in MapView)
+    setCollection(prev => {
+      if (!prev) return prev;
+      const remaining = prev.guitars.filter(g => g.id !== guitarId);
+      if (remaining.length === 0) {
+        localStorage.removeItem('volunteer_collection_id');
+        return null;
+      }
+      return { ...prev, guitars: remaining };
+    });
+    // API call in background, non-blocking
+    removeGuitarFromCollection(collection.id, guitarId).catch(err =>
+      console.error('Remove guitar error:', err.message)
+    );
   }, [collection]);
 
   const handleSendToAdmin = useCallback(async () => {

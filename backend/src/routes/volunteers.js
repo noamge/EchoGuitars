@@ -220,6 +220,20 @@ router.patch('/collection/:id/reject', async (req, res) => {
   }
 });
 
+// ── POST /api/volunteers/log-login — called when volunteer logs in
+router.post('/log-login', async (req, res) => {
+  try {
+    const { volunteerName, volunteerAddress } = req.body;
+    if (!volunteerName) return res.status(400).json({ error: 'volunteerName is required' });
+    if (!useMock()) {
+      await logAction(volunteerName, 'volunteer_login', '', '', volunteerAddress ? `כתובת: ${volunteerAddress}` : 'ללא כתובת');
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /api/volunteers/log — action log (admin)
 router.get('/log', async (req, res) => {
   try {

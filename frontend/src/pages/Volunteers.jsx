@@ -73,7 +73,7 @@ export default function Volunteers() {
   const [log, setLog]                 = useState([]);
   const [loadingC, setLoadingC]       = useState(true);
   const [loadingL, setLoadingL]       = useState(true);
-  const [tab, setTab]                 = useState('pending'); // pending | history | log
+  const [tab, setTab]                 = useState('active'); // active | pending | history | log
   const [approving, setApproving]     = useState(null); // `${collectionId}-${guitarId}`
 
   useEffect(() => {
@@ -110,11 +110,14 @@ export default function Volunteers() {
   };
 
   // Split collections
+  const activeCollections  = collections.filter(c =>
+    c.status !== 'closed' && c.guitars.some(g => g.status === 'selected')
+  );
   const pendingCollections = collections.filter(c =>
     c.guitars.some(g => g.status === 'pending')
   );
   const historyCollections = collections.filter(c =>
-    !c.guitars.some(g => g.status === 'pending') && c.guitars.length > 0
+    c.status === 'closed' || (!c.guitars.some(g => g.status === 'selected') && !c.guitars.some(g => g.status === 'pending'))
   );
 
   const pendingCount = pendingCollections.reduce(
@@ -130,6 +133,13 @@ export default function Volunteers() {
 
       {/* Tabs */}
       <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${tab === 'active' ? styles.tabActive : ''}`}
+          onClick={() => setTab('active')}
+        >
+          רשימות איסוף
+          <span className={styles.tabBadgeGray}>{activeCollections.length}</span>
+        </button>
         <button
           className={`${styles.tab} ${tab === 'pending' ? styles.tabActive : ''}`}
           onClick={() => setTab('pending')}
@@ -152,6 +162,44 @@ export default function Volunteers() {
           <span className={styles.tabBadgeGray}>{log.length}</span>
         </button>
       </div>
+
+      {/* ── Active collections (intent to collect) ── */}
+      {tab === 'active' && (
+        <div className={styles.section}>
+          {loadingC && <div className={styles.loading}>טוען...</div>}
+          {!loadingC && activeCollections.length === 0 && (
+            <div className={styles.empty}>אין רשימות איסוף פעילות כרגע</div>
+          )}
+          {activeCollections.map(c => (
+            <div key={c.id} className={styles.collectionCard}>
+              <div className={styles.collectionHeader}>
+                <div>
+                  <span className={styles.volunteerName}>👤 {c.volunteerName}</span>
+                  {c.volunteerAddress && (
+                    <span className={styles.volunteerAddr}>📍 יעד: {c.volunteerAddress}</span>
+                  )}
+                </div>
+                <div className={styles.collectionMeta}>
+                  {c.sentToAdmin && <span className={styles.sentBadge}>📤 שלח לוואטסאפ</span>}
+                  <span className={styles.dateLabel}>עודכן: {new Date(c.updatedAt).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                </div>
+              </div>
+              <div className={styles.guitarList}>
+                {c.guitars.filter(g => g.status === 'selected').map(g => (
+                  <div key={g.id} className={styles.guitarChip}>
+                    <div className={styles.guitarChipInfo}>
+                      <span className={styles.guitarChipName}>{g.name}</span>
+                      <span className={styles.guitarChipCity}>{g.city}{g.street ? `, ${g.street}` : ''}</span>
+                      {g.phone && <span className={styles.guitarChipPhone}>📞 {g.phone}</span>}
+                    </div>
+                    <span className={styles.guitarStatusBadge} style={{ background: '#dbeafe', color: '#1d4ed8' }}>מתוכנן לאיסוף</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Pending ── */}
       {tab === 'pending' && (
