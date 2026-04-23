@@ -39,6 +39,7 @@ const s = {
     fontSize: 14, color: '#111827', background: '#f9fafb',
     boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit',
     transition: 'border-color 0.15s',
+    direction: 'rtl', textAlign: 'right',
   },
   inputError: { borderColor: '#ef4444', background: '#fff5f5' },
   errorMsg:   { color: '#ef4444', fontSize: 12, marginTop: 4 },

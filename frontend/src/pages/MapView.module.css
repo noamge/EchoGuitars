@@ -624,30 +624,55 @@
   background: #f0fdf4 !important;
 }
 
-/* ── Collection card buttons: side by side ── */
+/* ── Collection card buttons: side by side, square ── */
 .collectionCardActions {
   display: flex;
   flex-direction: row !important;
-  gap: 7px;
+  gap: 6px;
   flex-shrink: 0;
   align-items: center;
 }
 .collectedBtn {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
   background: #16a34a; color: #fff;
-  border: none; border-radius: 8px;
-  padding: 7px 12px; font-size: 13px; font-weight: 700;
-  cursor: pointer; white-space: nowrap;
+  border: none; border-radius: 9px;
+  width: 52px; height: 48px;
+  font-size: 11px; font-weight: 700;
+  cursor: pointer; flex-direction: column;
+  transition: background 0.15s;
 }
 .collectedBtn:hover { background: #15803d; }
 .removeCardBtn {
   display: flex; align-items: center; justify-content: center;
   background: #fee2e2; border: 1.5px solid #fca5a5;
-  border-radius: 8px; padding: 7px 10px; cursor: pointer;
-  color: #dc2626; flex-shrink: 0;
+  border-radius: 9px; width: 48px; height: 48px;
+  cursor: pointer; color: #dc2626; flex-shrink: 0;
   transition: background 0.15s;
 }
 .removeCardBtn:hover { background: #fecaca; }
+
+/* ── Undo button ── */
+.undoBtn {
+  background: none; border: 1px solid #d1d5db;
+  border-radius: 5px; padding: 1px 5px;
+  font-size: 12px; cursor: pointer; color: #9ca3af;
+  line-height: 1.4;
+}
+.undoBtn:hover { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
+
+/* ── Contact button at bottom of sidebar ── */
+.contactWaBtn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px;
+  background: #f0fdf4;
+  color: #16a34a;
+  border-top: 1px solid #bbf7d0;
+  text-decoration: none;
+  font-size: 14px; font-weight: 600;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.contactWaBtn:hover { background: #dcfce7; }
 
 /* ── Admin WA FAB ── */
 .adminWaFab {

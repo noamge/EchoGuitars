@@ -150,6 +150,27 @@ router.patch('/collection/:id/mark-collected', async (req, res) => {
   }
 });
 
+// ── PATCH /api/volunteers/collection/:id/unmark-collected — volunteer undoes "נאסף"
+// Body: { guitarId }
+router.patch('/collection/:id/unmark-collected', async (req, res) => {
+  try {
+    if (useMock()) return res.json({ ok: true });
+    const { guitarId } = req.body;
+    const collection = await getCollection(req.params.id);
+    if (!collection) return res.status(404).json({ error: 'Not found' });
+
+    const updated = collection.guitars.map(g =>
+      g.id === Number(guitarId) ? { ...g, status: 'selected' } : g
+    );
+    const result = await updateCollectionRow(req.params.id, { guitars: updated });
+    const guitar = collection.guitars.find(g => g.id === Number(guitarId));
+    if (guitar) await logAction(collection.volunteerName, 'guitar_unmark_collected', guitarId, guitar.name, 'ביטול סימון איסוף');
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── PATCH /api/volunteers/collection/:id/approve — admin approves guitar collection
 // Body: { guitarId }
 router.patch('/collection/:id/approve', async (req, res) => {

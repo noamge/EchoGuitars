@@ -15,6 +15,7 @@ import {
   removeGuitarFromCollection,
   sendCollectionToAdmin,
   markGuitarCollected,
+  unmarkGuitarCollected,
 } from './api/client';
 
 export default function App() {
@@ -113,6 +114,16 @@ export default function App() {
     }
   }, [collection]);
 
+  const handleUnmarkCollected = useCallback(async (guitarId) => {
+    if (!collection) return;
+    try {
+      const updated = await unmarkGuitarCollected(collection.id, guitarId);
+      setCollection(updated);
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    }
+  }, [collection]);
+
   if (!authed) return <Login onLogin={handleLogin} />;
 
   if (role === 'volunteer') {
@@ -130,6 +141,7 @@ export default function App() {
             onRemoveFromCollection={handleRemoveFromCollection}
             onSendToAdmin={handleSendToAdmin}
             onMarkCollected={handleMarkCollected}
+            onUnmarkCollected={handleUnmarkCollected}
           />
         </VolunteerLayout>
       </BrowserRouter>

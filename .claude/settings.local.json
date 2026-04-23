@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npm create:*)",
       "Bash(cd frontend:*)",
-      "WebFetch(domain:docs.google.com)"
+      "WebFetch(domain:docs.google.com)",
+      "Bash(node --check src/routes/guitars.js)",
+      "Bash(node --check src/index.js)",
+      "Bash(npm run *)",
+      "Bash(node -e ' *)",
+      "Bash(node *)"
     ]
   }
 }

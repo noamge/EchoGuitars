@@ -305,8 +305,7 @@ function guitarStatusLabel(status) {
   switch (status) {
     case 'pending':  return { text: '✓ נאספה', color: '#16a34a' };
     case 'approved': return { text: '✓ נאספה ואושרה', color: '#16a34a' };
-    case 'rejected': return { text: 'נדחה', color: '#dc2626' };
-    default:         return null;
+    default:         return null; // 'selected' and 'rejected' show no label
   }
 }
 
@@ -319,6 +318,7 @@ export default function MapView({
   onRemoveFromCollection = null,
   onSendToAdmin = null,
   onMarkCollected = null,
+  onUnmarkCollected = null,
 }) {
   const navigate = useNavigate();
   const [guitars, setGuitars]             = useState([]);
@@ -677,7 +677,7 @@ export default function MapView({
               )}
               {collection.guitars.map(g => {
                 const sl = guitarStatusLabel(g.status);
-                const isActive   = g.status === 'selected';
+                const isActive   = g.status === 'selected' || g.status === 'rejected';
                 const isDone     = g.status === 'approved' || g.status === 'pending';
                 const isRemoving = removingGuitarId === g.id;
                 return (
@@ -700,7 +700,14 @@ export default function MapView({
                           </a>
                         </div>
                       )}
-                      {sl && <div style={{ fontSize: 11, fontWeight: 700, color: sl.color, marginTop: 3 }}>{sl.text}</div>}
+                      {sl && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: sl.color }}>{sl.text}</span>
+                          {g.status === 'pending' && (
+                            <button className={styles.undoBtn} onClick={e => { e.stopPropagation(); onUnmarkCollected?.(g.id); }} title="בטל סימון">↩</button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {isActive && (
                       <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
@@ -883,6 +890,21 @@ export default function MapView({
         )}
           </>
         )}
+
+        {/* ── Contact button at bottom of sidebar ── */}
+        {isVolunteer && (
+          <a
+            href={`https://wa.me/${WA_ADMIN}?text=${encodeURIComponent('היי נועם, אני מתנדב באקו ויש לי שאלה 🎸')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.contactWaBtn}
+          >
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="#25d366" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
+            </svg>
+            צור קשר
+          </a>
+        )}
       </div>
 
       {/* ── FAB: "המשך" ── */}
@@ -905,20 +927,6 @@ export default function MapView({
         />
       )}
 
-      {/* ── Floating WhatsApp contact button (always visible for volunteers) ── */}
-      {isVolunteer && (
-        <a
-          href={`https://wa.me/${WA_ADMIN}?text=${encodeURIComponent('היי, אני מתנדב באקו ויש לי שאלה 🎸')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.contactWaFab}
-          title="צור קשר"
-        >
-          <svg width="26" height="26" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
-          </svg>
-        </a>
-      )}
 
       {/* ── Confirmation modal (centered) ── */}
       {confirmModal && (

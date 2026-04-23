@@ -17,8 +17,8 @@
 
 .splashLogoWrap {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 250px;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,8 +31,8 @@
 }
 
 .splashLogo {
-  width: 200px;
-  height: 200px;
+  width: 230px;
+  height: 230px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -90,8 +90,8 @@
 
 /* ── Login card logo ── */
 .logoImg {
-  width: 130px;
-  height: 130px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   object-fit: cover;
   margin-bottom: 10px;
