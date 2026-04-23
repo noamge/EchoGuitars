@@ -303,8 +303,8 @@ function buildAdminWaUrl(collection, volunteerName, volunteerAddress) {
 
 function guitarStatusLabel(status) {
   switch (status) {
-    case 'pending':  return { text: 'ממתין לאישור מנהל', color: '#f59e0b' };
-    case 'approved': return { text: 'אושר ✓', color: '#16a34a' };
+    case 'pending':  return { text: '✓ נאספה', color: '#16a34a' };
+    case 'approved': return { text: '✓ נאספה ואושרה', color: '#16a34a' };
     case 'rejected': return { text: 'נדחה', color: '#dc2626' };
     default:         return null;
   }
@@ -470,20 +470,27 @@ export default function MapView({
     ];
   }, [userLocation, nearby]);
 
+  const myName = volunteerInfo?.name || '';
+
   const filters = ['הכל', 'נאסף', 'ממתין'];
   const visible = isVolunteer
-    ? guitars.filter(g => !g.collected)
+    // Volunteers: hide collected + hide guitars locked by OTHER volunteers
+    ? guitars.filter(g => !g.collected && (!g.inCollection || g.inCollection === myName))
     : filter === 'הכל' ? guitars
     : filter === 'נאסף' ? guitars.filter(g => g.collected)
     : guitars.filter(g => !g.collected);
 
   const calcNearby = useCallback((lat, lon) => {
-    const uncollected = guitars.filter(g => !g.collected && g.lat && g.lon);
+    // Exclude guitars locked by other volunteers from the nearby list
+    const uncollected = guitars.filter(g =>
+      !g.collected && g.lat && g.lon &&
+      (!g.inCollection || g.inCollection === myName)
+    );
     const withDist = uncollected.map(g => ({ ...g, distance: haversine(lat, lon, g.lat, g.lon) }));
     withDist.sort((a, b) => a.distance - b.distance);
     setNearby(withDist.slice(0, 15));
     setUserLocation({ lat, lon });
-  }, [guitars]);
+  }, [guitars, myName]);
 
   const detectLocation = () => {
     if (!navigator.geolocation) { alert('הדפדפן לא תומך ב-geolocation'); return; }
@@ -550,7 +557,7 @@ export default function MapView({
           )}
           {isVolunteer && (
             <span className={styles.volunteerCount} style={{ flex: 1, textAlign: 'center' }}>
-              <span className={styles.volunteerCountNum}>{visible.filter(g => !g.inCollection || g.inCollection === volunteerInfo?.name).length}</span> גיטרות זמינות לאיסוף
+              <span className={styles.volunteerCountNum}>{visible.length}</span> גיטרות זמינות לאיסוף
             </span>
           )}
           {!isVolunteer && (
@@ -644,7 +651,6 @@ export default function MapView({
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
           {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> גיטרות בסביבתי</div>}
           {isVolunteer && collectionView && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#0891b2'}}/> ברשימתי</div>}
-          {isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.locked}}/> בתהליך איסוף</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
       </div>
@@ -672,7 +678,7 @@ export default function MapView({
               {collection.guitars.map(g => {
                 const sl = guitarStatusLabel(g.status);
                 const isActive   = g.status === 'selected';
-                const isDone     = g.status === 'approved';
+                const isDone     = g.status === 'approved' || g.status === 'pending';
                 const isRemoving = removingGuitarId === g.id;
                 return (
                   <div
@@ -895,20 +901,6 @@ export default function MapView({
         >
           {savingCollection ? 'שומר...' : `✓ המשך (${selectedIds.size})`}
         </button>
-      )}
-
-      {/* ── FAB: "לאישור מנהל" (WhatsApp) ── */}
-      {isVolunteer && collection && collection.guitars.some(g => g.status === 'selected') && (
-        <a
-          href={buildAdminWaUrl(collection, volunteerInfo?.name || '', volunteerInfo?.address || '')}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.adminWaFab}
-          onClick={onSendToAdmin}
-        >
-          <WaIcon />
-          {collection.sentToAdmin ? 'שלח שוב למנהל' : 'לאישור מנהל'}
-        </a>
       )}
 
       {/* ── Collection bubble — shown when panel is closed ── */}
