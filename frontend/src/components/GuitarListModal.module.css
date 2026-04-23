@@ -87,3 +87,22 @@
 .collected:hover td { background: #dcfce7; }
 .pending td { background: #fff; }
 .pending:hover td { background: #f9fafb; }
+
+/* ── Type summary ── */
+.typeSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.typeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
