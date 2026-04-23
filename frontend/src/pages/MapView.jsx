@@ -340,6 +340,7 @@ export default function MapView({
   const [nearbyLimit, setNearbyLimit]     = useState(10);
   const [savingCollection, setSavingCollection] = useState(false);
   const [collectionView, setCollectionView] = useState(false); // panel open next to map
+  const [confirmCollectedId, setConfirmCollectedId] = useState(null); // guitar id awaiting confirm
 
   useEffect(() => {
     if (!isVolunteer) return;
@@ -677,24 +678,35 @@ export default function MapView({
                       )}
                       {sl && <div style={{ fontSize: 11, fontWeight: 700, color: sl.color, marginTop: 3 }}>{sl.text}</div>}
                     </div>
-                    <div className={styles.collectionCardActions}>
-                      {isActive && (
+                    <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
+                      {isActive && confirmCollectedId !== g.id && (
                         <>
                           <button
                             className={styles.collectedBtn}
-                            onClick={e => { e.stopPropagation(); onMarkCollected?.(g.id); }}
+                            onClick={() => setConfirmCollectedId(g.id)}
                             title="סמן שאספת"
                           >
                             <CheckCircle size={13} /> נאסף
                           </button>
                           <button
                             className={styles.removeCardBtn}
-                            onClick={e => { e.stopPropagation(); onRemoveFromCollection?.(g.id); }}
+                            onClick={() => onRemoveFromCollection?.(g.id)}
                             title="הסר מרשימה"
                           >
-                            <X size={13} />
+                            <X size={14} />
                           </button>
                         </>
+                      )}
+                      {isActive && confirmCollectedId === g.id && (
+                        <div className={styles.confirmRow}>
+                          <span className={styles.confirmText}>אספת?</span>
+                          <button className={styles.confirmYes} onClick={() => { onMarkCollected?.(g.id); setConfirmCollectedId(null); }}>
+                            ✓ כן
+                          </button>
+                          <button className={styles.confirmNo} onClick={() => setConfirmCollectedId(null)}>
+                            ✕
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

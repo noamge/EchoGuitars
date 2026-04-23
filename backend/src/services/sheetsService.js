@@ -415,20 +415,57 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
   return { id: stableId, rowIndex, city: newCity, street: newStreet };
 }
 
+// ── Extend banded range to cover a new row (keeps new rows inside the table visually) ──
+async function extendBandingToRow(sheets, targetRow1Based) {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    fields: 'sheets(properties.title,bandedRanges)',
+  });
+  const tab = meta.data.sheets.find(s => s.properties.title === SHEET_TAB);
+  if (!tab || !tab.bandedRanges?.length) return;
+
+  const needed = targetRow1Based + 1; // exclusive end in 0-based = row1based + 1
+  const requests = tab.bandedRanges
+    .filter(br => br.range.endRowIndex < needed)
+    .map(br => ({
+      updateBanding: {
+        bandedRange: { bandedRangeId: br.bandedRangeId, range: { ...br.range, endRowIndex: needed } },
+        fields: 'range.endRowIndex',
+      },
+    }));
+  if (requests.length) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      requestBody: { requests },
+    });
+  }
+}
+
 // ── Add guitar ────────────────────────────────────────────────────────────────
 async function addGuitar(data) {
   const sheets = getSheetsClient();
 
-  // Read only the ID column (U) to find the max stable ID — avoid scanning the whole sheet
+  // Scan column B (Name) from the bottom to find the last row with actual data.
+  // Using values.update (not append) so data always lands in column A, never shifted.
+  const namesRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!B2:B`,
+  });
+  const nameRows = namesRes.data.values || [];
+  let lastNameRow = 1;
+  for (let i = nameRows.length - 1; i >= 0; i--) {
+    if (nameRows[i][0] && nameRows[i][0].trim()) { lastNameRow = i + 2; break; }
+  }
+  const newRowIndex = lastNameRow + 1;
+
+  // Find max stable ID from column U
   const idRes = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: `${SHEET_TAB}!U2:U`,
   });
-  const idRows = idRes.data.values || [];
-  const maxId = idRows.reduce((max, r) => {
-    const n = Number(r[0] || 0);
-    return n > max ? n : max;
-  }, idRows.length + 1);
+  const maxId = (idRes.data.values || []).reduce((max, r) => {
+    const n = Number(r[0] || 0); return n > max ? n : max;
+  }, 1);
   const newId = maxId + 1;
 
   const row = new Array(23).fill('');
@@ -443,23 +480,20 @@ async function addGuitar(data) {
   row[COL.IMAGE_URL]   = data.imageUrl    || '';
   row[COL.ID]          = String(newId);
 
-  // Use append so Google Sheets auto-extends the Table to include the new row.
-  // values.update wrote to a fixed row index which fell outside the Table range,
-  // causing the row to appear "below the table" without table formatting,
-  // and subsequent Form responses would land between the table and our row.
-  const appendRes = await sheets.spreadsheets.values.append({
+  // Write to exact computed row (always starts at column A — no column shift bug)
+  await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A2:W`,
+    range: `${SHEET_TAB}!A${newRowIndex}:W${newRowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
 
-  // Extract the actual row index from the response (e.g., "גיליון1!A102:W102" → 102)
-  const updatedRange = appendRes.data.updates?.updatedRange || '';
-  const match = updatedRange.match(/[A-Z]+(\d+):/);
-  const actualRowIndex = match ? parseInt(match[1], 10) : 0;
+  // Extend the banded range so the new row gets table formatting (non-fatal if it fails)
+  try { await extendBandingToRow(sheets, newRowIndex); } catch (e) {
+    console.warn('extendBanding non-fatal:', e.message);
+  }
 
-  return rowToGuitar(row, actualRowIndex);
+  return rowToGuitar(row, newRowIndex);
 }
 
 // ── Delete guitar ─────────────────────────────────────────────────────────────
