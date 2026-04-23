@@ -676,8 +676,8 @@
 /* ── Floating WA contact button ── */
 .contactWaFab {
   position: fixed;
-  bottom: 80px;
-  right: 20px;
+  bottom: 84px;
+  left: 20px;
   z-index: 900;
   width: 46px;
   height: 46px;

@@ -70,6 +70,17 @@ export default function Layout() {
         <div className={styles.sidebarFooter}>
           <p>גיטרה לכל ילד</p>
           <button
+            className={styles.volunteerSwitchBtn}
+            onClick={() => {
+              localStorage.setItem('echo_auth', '1');
+              localStorage.setItem('echo_role', 'volunteer');
+              localStorage.setItem('volunteer_info', JSON.stringify({ name: 'נועם גבע', address: '' }));
+              window.location.reload();
+            }}
+          >
+            👤 כניסה כמתנדב
+          </button>
+          <button
             className={styles.logoutBtn}
             onClick={() => {
               localStorage.removeItem('echo_auth');

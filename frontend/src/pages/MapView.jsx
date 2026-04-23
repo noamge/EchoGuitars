@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getGuitarsForMap, updateGuitar } from '../api/client';
-import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot, X, CheckCircle, Send } from 'lucide-react';
+import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot, X, CheckCircle } from 'lucide-react';
 import CollectionBubble from '../components/CollectionBubble';
 import styles from './MapView.module.css';
 
@@ -701,7 +701,6 @@ export default function MapView({
                         </div>
                       )}
                       {sl && <div style={{ fontSize: 11, fontWeight: 700, color: sl.color, marginTop: 3 }}>{sl.text}</div>}
-                      {isDone && <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 700 }}>✓ נאסף</div>}
                     </div>
                     {isActive && (
                       <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
@@ -726,11 +725,6 @@ export default function MapView({
               })}
             </div>
 
-            {collection.sentToAdmin && (
-              <div className={styles.alreadySent} style={{ padding: '8px 14px', borderTop: '1px solid var(--border)' }}>
-                <Send size={12} /> נשלח למנהל בעבר
-              </div>
-            )}
           </div>
         )}
 

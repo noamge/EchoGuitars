@@ -201,19 +201,13 @@ router.patch('/collection/:id/reject', async (req, res) => {
 
     const guitar = collection.guitars.find(g => g.id === Number(guitarId));
 
-    // Unlock guitar — returns to volunteer map
-    try { await unlockGuitar(Number(guitarId)); } catch {}
-
+    // Reset guitar to 'selected' — volunteer can try to mark as collected again
     const updatedGuitars = collection.guitars.map(g =>
-      g.id === Number(guitarId) ? { ...g, status: 'rejected' } : g
+      g.id === Number(guitarId) ? { ...g, status: 'selected' } : g
     );
-    const allDone = updatedGuitars.every(g => ['approved', 'rejected'].includes(g.status));
-    const result = await updateCollectionRow(req.params.id, {
-      guitars: updatedGuitars,
-      status: allDone ? 'closed' : collection.status,
-    });
+    const result = await updateCollectionRow(req.params.id, { guitars: updatedGuitars });
 
-    if (guitar) await logAction('מנהל', 'guitar_rejected', guitarId, guitar.name, `נדחה — חזרה למפה`);
+    if (guitar) await logAction('מנהל', 'guitar_rejected', guitarId, guitar.name, `נדחה — חזר לרשימת המתנדב`);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
