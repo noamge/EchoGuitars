@@ -226,7 +226,89 @@
   opacity: 0.5;
 }
 
-/* ── 3-mode tabs ─────────────────────────────────────────────────────────── */
+/* ── Action tiles ────────────────────────────────────────────────────────── */
+
+.actionTiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .actionTiles { grid-template-columns: repeat(2, 1fr); }
+}
+
+.actionTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 10px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.actionTile:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.actionTileActive {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.tileIcon { font-size: 28px; line-height: 1; }
+.tileLabel { font-size: 13px; font-weight: 700; color: inherit; text-align: center; }
+
+/* ── Action-specific fields group ─────────────────────────────────────────── */
+
+.actionFields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+}
+
+/* ── AI toggle row ────────────────────────────────────────────────────────── */
+
+.aiToggleRow {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.aiToggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.aiToggleBtn:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+}
+
+/* ── 3-mode tabs (kept for reference) ───────────────────────────────────── */
 
 .tabs {
   display: flex;
