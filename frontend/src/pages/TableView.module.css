@@ -177,3 +177,58 @@
   background: #fef2f2;
 }
 .deleteBtn:disabled { opacity: 0.4; }
+
+/* ── Repaired toggle ── */
+.repairedBtnOn {
+  padding: 3px 10px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.repairedBtnOn:hover:not(:disabled) { background: #15803d; }
+
+.repairedBtnOff {
+  padding: 3px 10px;
+  background: none;
+  color: #9ca3af;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.repairedBtnOff:hover:not(:disabled) {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+.repairedBtnOn:disabled,
+.repairedBtnOff:disabled { opacity: 0.5; cursor: wait; }
+
+/* ── Who repairs inline edit ── */
+.whoRepairsDisplay {
+  cursor: pointer;
+  font-size: 13px;
+  display: block;
+  padding: 2px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.whoRepairsDisplay:hover { background: #eff6ff; }
+
+.whoRepairsInput {
+  width: 100%;
+  padding: 3px 6px;
+  border: 1.5px solid var(--primary);
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}

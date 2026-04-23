@@ -56,13 +56,16 @@ function sortValue(g, key) {
 
 export default function TableView() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [guitars, setGuitars] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState('');
-  const [sortKey, setSortKey] = useState(null);
-  const [sortDir, setSortDir] = useState('asc');
-  const [marking, setMarking] = useState(null);
-  const [deleting, setDeleting] = useState(null);
+  const [guitars, setGuitars]           = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState('');
+  const [sortKey, setSortKey]           = useState(null);
+  const [sortDir, setSortDir]           = useState('asc');
+  const [marking, setMarking]           = useState(null);
+  const [deleting, setDeleting]         = useState(null);
+  const [togglingRepaired, setTogglingRepaired] = useState(null);
+  const [editingWhoRepairs, setEditingWhoRepairs] = useState(null); // guitar id
+  const [whoRepairsValue, setWhoRepairsValue]     = useState('');
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
@@ -132,6 +135,36 @@ export default function TableView() {
     }
   };
 
+  const toggleRepaired = async (g) => {
+    setTogglingRepaired(g.id);
+    try {
+      await updateGuitar(g.id, { repaired: !g.repaired });
+      setGuitars(prev => prev.map(r => r.id === g.id ? { ...r, repaired: !g.repaired } : r));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setTogglingRepaired(null);
+    }
+  };
+
+  const startEditWhoRepairs = (g) => {
+    setEditingWhoRepairs(g.id);
+    setWhoRepairsValue(g.whoRepairs || '');
+  };
+
+  const saveWhoRepairs = async (id) => {
+    const val = whoRepairsValue.trim();
+    const current = guitars.find(g => g.id === id)?.whoRepairs || '';
+    setEditingWhoRepairs(null);
+    if (val === current) return;
+    try {
+      await updateGuitar(id, { whoRepairs: val });
+      setGuitars(prev => prev.map(g => g.id === id ? { ...g, whoRepairs: val } : g));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    }
+  };
+
   const clearFilter = () => setSearchParams({});
 
   return (
@@ -176,6 +209,10 @@ export default function TableView() {
                       : ' ⇅'}
                   </th>
                 ))}
+                <th style={{ width: 70, minWidth: 70 }} className={styles.sortableTh} onClick={() => handleSort('repaired')} title="מיין לפי תוקן">
+                  תוקן {sortKey === 'repaired' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'}
+                </th>
+                <th style={{ width: 120, minWidth: 120 }}>מי מתקן</th>
                 <th style={{ width: 110, minWidth: 110 }}>פעולה</th>
               </tr>
             </thead>
@@ -187,6 +224,45 @@ export default function TableView() {
                       {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
                     </td>
                   ))}
+
+                  {/* תוקן — toggle button */}
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      className={g.repaired ? styles.repairedBtnOn : styles.repairedBtnOff}
+                      onClick={() => toggleRepaired(g)}
+                      disabled={togglingRepaired === g.id}
+                      title={g.repaired ? 'סמן כלא תוקן' : 'סמן כתוקן'}
+                    >
+                      {togglingRepaired === g.id ? '...' : g.repaired ? '✓' : '—'}
+                    </button>
+                  </td>
+
+                  {/* מי מתקן — inline edit */}
+                  <td style={{ maxWidth: 120 }}>
+                    {editingWhoRepairs === g.id ? (
+                      <input
+                        className={styles.whoRepairsInput}
+                        value={whoRepairsValue}
+                        autoFocus
+                        placeholder="שם המתקן..."
+                        onChange={e => setWhoRepairsValue(e.target.value)}
+                        onBlur={() => saveWhoRepairs(g.id)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') saveWhoRepairs(g.id);
+                          if (e.key === 'Escape') setEditingWhoRepairs(null);
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className={styles.whoRepairsDisplay}
+                        onClick={() => startEditWhoRepairs(g)}
+                        title="לחץ לעריכה"
+                      >
+                        {g.whoRepairs || <span style={{ color: '#9ca3af' }}>לחץ לעריכה</span>}
+                      </span>
+                    )}
+                  </td>
+
                   <td>
                     <div className={styles.actionCell}>
                       {!g.collected && (

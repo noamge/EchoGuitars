@@ -60,9 +60,9 @@ export default function Dashboard() {
   if (error)   return <div className={styles.center} style={{ color: 'red' }}>שגיאה: {error}</div>;
   if (!stats)  return null;
 
-  const collectedPct       = stats.total ? Math.round((stats.collected / stats.total) * 100) : 0;
-  const contactedNotCollected = allGuitars.filter(g => g.contact && !g.collected);
-  const donated               = allGuitars.filter(g => g.donatedTo);
+  const collectedPct  = stats.total ? Math.round((stats.collected / stats.total) * 100) : 0;
+  const readyToDonate = allGuitars.filter(g => g.repaired && !g.donatedTo);
+  const donated       = allGuitars.filter(g => g.donatedTo);
 
   return (
     <div className={styles.page}>
@@ -78,8 +78,9 @@ export default function Dashboard() {
         <StatCard label="נאספו" value={stats.collected} color="#40916c"
           sub={`${collectedPct}% מהסך הכל`}
           onClick={() => setModal({ title: 'גיטרות שנאספו', guitars: allGuitars.filter(g => g.collected) })} />
-        <StatCard label="נוצר קשר, טרם נאסף" value={contactedNotCollected.length} color="#f4a261"
-          onClick={() => setModal({ title: 'נוצר קשר — טרם נאסף', guitars: contactedNotCollected })} />
+        <StatCard label="מוכנות לתרומה" value={readyToDonate.length} color="#7c3aed"
+          sub="תוקנו, טרם נתרמו"
+          onClick={() => setModal({ title: 'גיטרות מוכנות לתרומה', guitars: readyToDonate })} />
         <StatCard label="נתרמו" value={donated.length} color="#4361ee"
           onClick={() => setModal({ title: 'גיטרות שנתרמו', guitars: donated })} />
       </div>
