@@ -303,9 +303,10 @@ function buildAdminWaUrl(collection, volunteerName, volunteerAddress) {
 
 function guitarStatusLabel(status) {
   switch (status) {
-    case 'pending':  return { text: '✓ נאספה', color: '#16a34a' };
-    case 'approved': return { text: '✓ נאספה ואושרה', color: '#16a34a' };
-    default:         return null; // 'selected' and 'rejected' show no label
+    case 'pending':        return { text: '✓ נאספה', color: '#16a34a' };
+    case 'approved':       return { text: '✓ נאספה ואושרה', color: '#16a34a' };
+    case 'admin_collected': return { text: 'מנהל עדכן שהגיטרה כבר נאספה', color: '#92400e' };
+    default:               return null;
   }
 }
 
@@ -677,13 +678,14 @@ export default function MapView({
               )}
               {collection.guitars.map(g => {
                 const sl = guitarStatusLabel(g.status);
-                const isActive   = g.status === 'selected' || g.status === 'rejected';
-                const isDone     = g.status === 'approved' || g.status === 'pending';
-                const isRemoving = removingGuitarId === g.id;
+                const isActive        = g.status === 'selected' || g.status === 'rejected';
+                const isDone          = g.status === 'approved' || g.status === 'pending';
+                const isAdminCollected = g.status === 'admin_collected';
+                const isRemoving      = removingGuitarId === g.id;
                 return (
                   <div
                     key={g.id}
-                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isDone ? styles.nearbyCardDone : ''} ${isRemoving ? styles.nearbyCardRemoving : ''}`}
+                    className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isDone ? styles.nearbyCardDone : ''} ${isAdminCollected ? styles.nearbyCardAdminCollected : ''} ${isRemoving ? styles.nearbyCardRemoving : ''}`}
                     onClick={() => setHighlightedId(g.id)}
                     style={{ cursor: 'pointer' }}
                   >
@@ -692,7 +694,7 @@ export default function MapView({
                       <div className={styles.nearbyAddress}>
                         <MapPin size={12} /> {g.city}{g.street ? `, ${g.street}` : ''}
                       </div>
-                      {g.phone && !isDone && (
+                      {g.phone && !isDone && !isAdminCollected && (
                         <div className={styles.nearbyPhoneBlock}>
                           <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
                           <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}>
@@ -718,6 +720,17 @@ export default function MapView({
                         >
                           <CheckCircle size={15} /> נאסף
                         </button>
+                        <button
+                          className={styles.removeCardBtn}
+                          onClick={() => handleRemoveGuitar(g.id)}
+                          title="הסר מרשימה"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                    )}
+                    {isAdminCollected && (
+                      <div className={styles.collectionCardActions} onClick={e => e.stopPropagation()}>
                         <button
                           className={styles.removeCardBtn}
                           onClick={() => handleRemoveGuitar(g.id)}

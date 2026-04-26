@@ -3,8 +3,9 @@ const router = express.Router();
 const {
   getCollections, getCollection, createCollection, updateCollectionRow,
   lockGuitar, unlockGuitar, updateGuitarByRowIndex,
-  logAction, getActionLog,
+  logAction, getActionLog, getGuitarsCollectedStatus,
 } = require('../services/sheetsService');
+const { sendCollectionEmail } = require('../services/emailService');
 
 const useMock = () => !process.env.GOOGLE_SHEET_ID;
 
@@ -36,11 +37,34 @@ router.get('/pending-count', async (req, res) => {
 });
 
 // ── GET /api/volunteers/collection/:id — get single collection
+// Cross-references with main sheet: guitars already collected elsewhere → admin_collected
 router.get('/collection/:id', async (req, res) => {
   try {
     if (useMock()) return res.json(null);
     const col = await getCollection(req.params.id);
     if (!col) return res.status(404).json({ error: 'Not found' });
+
+    // Check if any "selected" guitars were already collected via another method
+    const activeGuitarIds = col.guitars
+      .filter(g => g.status === 'selected' || g.status === 'rejected')
+      .map(g => g.id);
+
+    if (activeGuitarIds.length > 0) {
+      const collectedMap = await getGuitarsCollectedStatus();
+      let changed = false;
+      const updatedGuitars = col.guitars.map(g => {
+        if ((g.status === 'selected' || g.status === 'rejected') && collectedMap[g.id]) {
+          changed = true;
+          return { ...g, status: 'admin_collected' };
+        }
+        return g;
+      });
+      if (changed) {
+        await updateCollectionRow(req.params.id, { guitars: updatedGuitars });
+        col.guitars = updatedGuitars;
+      }
+    }
+
     res.json(col);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -85,6 +109,14 @@ router.post('/collection', async (req, res) => {
       }
     }
 
+    // Send email notification (non-blocking)
+    sendCollectionEmail({
+      volunteerName,
+      volunteerAddress,
+      guitars: collection.guitars.filter(g => g.status === 'selected'),
+      action: 'saved',
+    }).catch(() => {});
+
     res.json(collection);
   } catch (err) {
     console.error(err);
@@ -107,6 +139,15 @@ router.delete('/collection/:id/guitar/:guitarId', async (req, res) => {
     // Unlock the guitar so it returns to map
     try { await unlockGuitar(guitarId); } catch {}
     if (removed) await logAction(collection.volunteerName, 'guitar_unlocked', guitarId, removed.name, 'הוסר מרשימת האיסוף');
+
+    // Send email notification (non-blocking)
+    sendCollectionEmail({
+      volunteerName: collection.volunteerName,
+      volunteerAddress: collection.volunteerAddress,
+      guitars: remaining,
+      action: 'removed',
+      removedGuitar: removed || { name: String(guitarId) },
+    }).catch(() => {});
 
     res.json({ ok: true });
   } catch (err) {
@@ -167,6 +208,36 @@ router.patch('/collection/:id/unmark-collected', async (req, res) => {
     if (guitar) await logAction(collection.volunteerName, 'guitar_unmark_collected', guitarId, guitar.name, 'ביטול סימון איסוף');
     res.json(result);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── PATCH /api/volunteers/collection/:id/admin-mark-collected — admin marks guitar as already collected
+// Body: { guitarId }
+router.patch('/collection/:id/admin-mark-collected', async (req, res) => {
+  try {
+    if (useMock()) return res.json({ ok: true });
+    const { guitarId } = req.body;
+    const collection = await getCollection(req.params.id);
+    if (!collection) return res.status(404).json({ error: 'Not found' });
+
+    const guitar = collection.guitars.find(g => g.id === Number(guitarId));
+    if (!guitar) return res.status(404).json({ error: 'Guitar not found in collection' });
+
+    // Mark as collected in main sheet
+    const notesStr = [`אוסף: ${collection.volunteerName}`, collection.volunteerAddress ? `יעד: ${collection.volunteerAddress}` : ''].filter(Boolean).join(' | ');
+    await updateGuitarByRowIndex(guitarId, { collected: true, notes: notesStr, inCollection: '' });
+
+    // Update collection record
+    const updatedGuitars = collection.guitars.map(g =>
+      g.id === Number(guitarId) ? { ...g, status: 'admin_collected' } : g
+    );
+    const result = await updateCollectionRow(req.params.id, { guitars: updatedGuitars });
+
+    await logAction('מנהל', 'guitar_collected_manual', guitarId, guitar.name, `סומנה כנאספה על ידי מנהל — רשימת ${collection.volunteerName}`);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });

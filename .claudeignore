@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Lock files (large, generated)
+package-lock.json
+backend/package-lock.json
+frontend/package-lock.json
+
+# Environment files (sensitive)
+.env
+backend/.env
+frontend/.env
+
+# Static assets (images, icons)
+pics/
+frontend/public/logo.png
+frontend/public/favicon.svg
+frontend/public/icons.svg
+frontend/src/assets/
+
+# Git internals
+.git/
+
+# Data/stats files
+backend/stats.json
+
+# One-off migration scripts
+backend/scripts/

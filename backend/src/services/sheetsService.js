@@ -641,6 +641,23 @@ async function updateCollectionRow(id, fields) {
   return rowToCollection(row);
 }
 
+// ── Check collected status for a set of guitar IDs ───────────────────────────
+async function getGuitarsCollectedStatus() {
+  const sheets = getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!O2:U`, // O=collected (index 0), U=id (index 6)
+  });
+  const rows = res.data.values || [];
+  const map = {};
+  for (const row of rows) {
+    const id = Number(row[6]);
+    const collected = ['TRUE', 'true', 'True', 'V', 'v', 'כן', '1', 'yes', 'Yes'].includes(row[0]) || row[0] === true;
+    if (id) map[id] = collected;
+  }
+  return map;
+}
+
 // ── Action Log ────────────────────────────────────────────────────────────────
 async function logAction(actor, action, guitarId, guitarName, details) {
   await ensureSheets();
@@ -687,6 +704,7 @@ module.exports = {
   addGuitar,
   deleteGuitarRow,
   ensureSheets,
+  getGuitarsCollectedStatus,
   // Collections
   getCollections,
   getCollection,

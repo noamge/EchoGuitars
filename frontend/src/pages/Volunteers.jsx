@@ -4,6 +4,7 @@ import {
   getVolunteerLog,
   approveGuitarCollection,
   rejectGuitarCollection,
+  adminMarkGuitarCollected,
 } from '../api/client';
 import styles from './Volunteers.module.css';
 
@@ -75,6 +76,7 @@ export default function Volunteers() {
   const [loadingL, setLoadingL]       = useState(true);
   const [tab, setTab]                 = useState('active'); // active | pending | history | log
   const [approving, setApproving]     = useState(null); // `${collectionId}-${guitarId}`
+  const [adminMarking, setAdminMarking] = useState(null); // `${collectionId}-${guitarId}`
 
   useEffect(() => {
     getVolunteerCollections()
@@ -94,6 +96,18 @@ export default function Volunteers() {
       alert('שגיאה: ' + err.message);
     } finally {
       setApproving(null);
+    }
+  };
+
+  const handleAdminMarkCollected = async (collectionId, guitarId) => {
+    setAdminMarking(`${collectionId}-${guitarId}`);
+    try {
+      const updated = await adminMarkGuitarCollected(collectionId, guitarId);
+      setCollections(prev => prev.map(c => c.id === collectionId ? updated : c));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setAdminMarking(null);
     }
   };
 
@@ -185,14 +199,30 @@ export default function Volunteers() {
                 </div>
               </div>
               <div className={styles.guitarList}>
-                {c.guitars.filter(g => g.status === 'selected').map(g => (
+                {c.guitars.filter(g => g.status === 'selected' || g.status === 'admin_collected').map(g => (
                   <div key={g.id} className={styles.guitarChip}>
                     <div className={styles.guitarChipInfo}>
                       <span className={styles.guitarChipName}>{g.name}</span>
                       <span className={styles.guitarChipCity}>{g.city}{g.street ? `, ${g.street}` : ''}</span>
                       {g.phone && <span className={styles.guitarChipPhone}>📞 {g.phone}</span>}
                     </div>
-                    <span className={styles.guitarStatusBadge} style={{ background: '#dbeafe', color: '#1d4ed8' }}>מתוכנן לאיסוף</span>
+                    <div className={styles.guitarChipRight}>
+                      {g.status === 'admin_collected' ? (
+                        <span className={styles.guitarStatusBadge} style={{ background: '#dcfce7', color: '#15803d' }}>✓ נאסף</span>
+                      ) : (
+                        <>
+                          <span className={styles.guitarStatusBadge} style={{ background: '#dbeafe', color: '#1d4ed8' }}>מתוכנן לאיסוף</span>
+                          <button
+                            className={styles.adminCollectedBtn}
+                            onClick={() => handleAdminMarkCollected(c.id, g.id)}
+                            disabled={adminMarking === `${c.id}-${g.id}`}
+                            title="סמן שהגיטרה כבר נאספה"
+                          >
+                            {adminMarking === `${c.id}-${g.id}` ? '...' : '✓ נאסף כבר'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -100,6 +100,9 @@ export const markGuitarCollected = (collectionId, guitarId) =>
 export const unmarkGuitarCollected = (collectionId, guitarId) =>
   api.patch(`/volunteers/collection/${collectionId}/unmark-collected`, { guitarId }).then(r => r.data);
 
+export const adminMarkGuitarCollected = (collectionId, guitarId) =>
+  api.patch(`/volunteers/collection/${collectionId}/admin-mark-collected`, { guitarId }).then(r => r.data);
+
 export const approveGuitarCollection = (collectionId, guitarId) =>
   api.patch(`/volunteers/collection/${collectionId}/approve`, { guitarId }).then(r => r.data);
 
