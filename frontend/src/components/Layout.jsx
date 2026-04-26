@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { BarChart2, Map, ClipboardList, Table, MapPin, Users, X, Menu } from 'lucide-react';
 import { getAddressIssuesCount, getVolunteerPendingCount } from '../api/client';
 import styles from './Layout.module.css';
@@ -13,15 +13,25 @@ const nav = [
   { to: '/volunteers',     label: 'מתנדבים',           Icon: Users,   badgeKey: 'volunteers' },
 ];
 
+function getSkippedCount() {
+  try {
+    const stored = localStorage.getItem('address_review_skipped');
+    return stored ? Object.keys(JSON.parse(stored)).length : 0;
+  } catch { return 0; }
+}
+
 export default function Layout() {
+  const location = useLocation();
   const [open, setOpen]                     = useState(false);
   const [addressBadge, setAddressBadge]     = useState(0);
   const [volunteerBadge, setVolunteerBadge] = useState(0);
 
   useEffect(() => {
-    getAddressIssuesCount().then(setAddressBadge).catch(() => {});
+    getAddressIssuesCount()
+      .then(count => setAddressBadge(Math.max(0, count - getSkippedCount())))
+      .catch(() => {});
     getVolunteerPendingCount().then(setVolunteerBadge).catch(() => {});
-  }, []);
+  }, [location.pathname]);
 
   const getBadge = (key) => {
     if (key === 'addressIssues') return addressBadge;

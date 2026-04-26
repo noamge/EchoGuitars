@@ -247,3 +247,8 @@
   .logGuitar, .logDetails { display: none; }
   .collectionHeader { flex-direction: column; }
 }
+
+@media (max-width: 560px) {
+  .tabs { flex-wrap: wrap; }
+  .tab { padding: 7px 10px; font-size: 12px; }
+}
