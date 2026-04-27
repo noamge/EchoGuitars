@@ -337,7 +337,7 @@ export default function MapView({
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [viewMode, setViewMode]           = useState('cluster');
   const [showToast, setShowToast]         = useState(isVolunteer);
-  const [showSelectHint, setShowSelectHint] = useState(false);
+  const [showSelectHint, setShowSelectHint] = useState(null); // null=never shown, true=visible, false=hiding
   const [selectedIds, setSelectedIds]     = useState(new Set());
   const [nearbyLimit, setNearbyLimit]     = useState(10);
   const [savingCollection, setSavingCollection] = useState(false);
@@ -542,7 +542,7 @@ export default function MapView({
           <button className={styles.toastClose} onClick={() => setShowToast(false)}>✕</button>
         </div>
       )}
-      {isVolunteer && (
+      {isVolunteer && showSelectHint !== null && (
         <div className={`${styles.toast} ${styles.toastHint} ${showSelectHint ? styles.toastVisible : styles.toastHidden}`}>
           <span className={styles.toastIcon}>🎸</span>
           בחר גיטרות אפשריות לאיסוף ולחץ על המשך
