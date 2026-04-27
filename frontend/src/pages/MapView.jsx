@@ -131,7 +131,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 function MapMarkers({
   visible, highlightedId, nearbyIds, marking, markCollected,
   navigate, viewMode, isVolunteer, selectedIds, onToggleSelect,
-  volunteerName, collectionGuitarIds, collectionHighlightIds,
+  volunteerName, collectionGuitarIds, collectionHighlightIds, onMarkerOpen,
 }) {
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
@@ -238,6 +238,7 @@ function MapMarkers({
           position={[g0.lat, g0.lon]}
           icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length, isLocked, isMyCollection)}
           zIndexOffset={isHighlighted ? 1000 : isMyCollection ? 600 : isNearby ? 500 : 0}
+          eventHandlers={{ popupopen: () => onMarkerOpen?.(g0.id) }}
         >
           <Popup maxWidth={250}>
             <div className={styles.popup}>
@@ -268,6 +269,7 @@ function MapMarkers({
           radius={radius}
           fillColor={fillColor}
           color="#fff" weight={isHighlighted || isNearby ? 3 : 2} fillOpacity={isHighlighted || isNearby ? 1 : 0.85}
+          eventHandlers={{ popupopen: () => onMarkerOpen?.(g.id) }}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
         </CircleMarker>
@@ -277,7 +279,9 @@ function MapMarkers({
     const allCollected = group.every(g => g.collected);
     const bg = isHighlighted ? '#4361ee' : isMyCollection ? '#0891b2' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (allCollected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
     return (
-      <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}>
+      <Marker key={groupKey} position={[g0.lat, g0.lon]} icon={makeGroupIcon(group.length, bg)}
+        eventHandlers={{ popupopen: () => onMarkerOpen?.(g0.id) }}
+      >
         <Popup maxWidth={250}>
           <div className={styles.popup}>
             <strong style={{ fontSize: 13 }}>{group.length} גיטרות במיקום זה</strong>
@@ -352,12 +356,13 @@ export default function MapView({
     return () => clearTimeout(t);
   }, [isVolunteer]);
 
-  useEffect(() => {
-    if (!isVolunteer || !highlightedId) return;
+  const hintShownRef = useRef(false);
+  const triggerSelectHint = useCallback(() => {
+    if (!isVolunteer || hintShownRef.current) return;
+    hintShownRef.current = true;
     setShowSelectHint(true);
-    const t = setTimeout(() => setShowSelectHint(false), 4000);
-    return () => clearTimeout(t);
-  }, [highlightedId, isVolunteer]);
+    setTimeout(() => setShowSelectHint(false), 8000);
+  }, [isVolunteer]);
 
   useEffect(() => {
     getGuitarsForMap()
@@ -504,13 +509,23 @@ export default function MapView({
   const detectLocation = () => {
     if (!navigator.geolocation) { alert('הדפדפן לא תומך ב-geolocation'); return; }
     setLocating(true);
+    const fallback = setTimeout(() => {
+      setLocating(false);
+      alert('לא הצלחנו לזהות מיקום — נסה שוב או הזן כתובת ידנית');
+    }, 12000);
     navigator.geolocation.getCurrentPosition(
       pos => {
+        clearTimeout(fallback);
         calcNearby(pos.coords.latitude, pos.coords.longitude);
         setResolvedAddress('מיקום GPS');
         setLocating(false);
       },
-      () => { alert('לא הצלחנו לזהות מיקום'); setLocating(false); }
+      () => {
+        clearTimeout(fallback);
+        alert('לא הצלחנו לזהות מיקום — נסה שוב או הזן כתובת ידנית');
+        setLocating(false);
+      },
+      { timeout: 10000, maximumAge: 60000 }
     );
   };
 
@@ -545,7 +560,7 @@ export default function MapView({
       {isVolunteer && showSelectHint !== null && (
         <div className={`${styles.toast} ${styles.toastHint} ${showSelectHint ? styles.toastVisible : styles.toastHidden}`}>
           <span className={styles.toastIcon}>🎸</span>
-          בחר גיטרות אפשריות לאיסוף ולחץ על המשך
+          בחר גיטרות אפשריות לאיסוף ולחץ על &apos;המשך&apos;
         </div>
       )}
 
@@ -601,13 +616,13 @@ export default function MapView({
                 <Search size={15} />
               </button>
               <button
-                className={styles.volunteerGpsBtnInline}
+                className={`${styles.volunteerGpsBtnInline} ${locating ? styles.locating : ''}`}
                 onClick={detectLocation}
                 disabled={locating || loading}
                 title="זיהוי מיקום עצמי"
               >
-                <Navigation size={14} />
-                {locating ? '...' : 'זהה מיקום עצמי'}
+                {locating ? <span className={styles.spinner} /> : <Navigation size={14} />}
+                {locating ? 'מאתר...' : 'זהה מיקום עצמי'}
               </button>
             </div>
           </div>
@@ -656,6 +671,7 @@ export default function MapView({
                 volunteerName={volunteerInfo?.name || ''}
                 collectionGuitarIds={collectionGuitarIds}
                 collectionHighlightIds={collectionHighlightIds}
+                onMarkerOpen={triggerSelectHint}
               />
             </MapContainer>
           )}
@@ -775,8 +791,8 @@ export default function MapView({
 
         {!isVolunteer && (
           <div className={styles.locationControls}>
-            <button className={styles.detectBtn} onClick={detectLocation} disabled={locating || loading}>
-              <Navigation size={15} />
+            <button className={`${styles.detectBtn} ${locating ? styles.locating : ''}`} onClick={detectLocation} disabled={locating || loading}>
+              {locating ? <span className={styles.spinner} /> : <Navigation size={15} />}
               {locating ? 'מאתר...' : 'זהה מיקום עצמי'}
             </button>
             <div className={styles.manualRow}>
@@ -840,7 +856,7 @@ export default function MapView({
                     <div
                       key={g.id}
                       className={`${styles.nearbyCard} ${highlightedId === g.id ? styles.nearbyCardHighlighted : ''} ${isVolunteer && selectedIds.has(g.id) ? styles.nearbyCardSelected : ''} ${lockedByOther ? styles.nearbyCardLocked : ''}`}
-                      onClick={() => setHighlightedId(g.id)}
+                      onClick={() => { setHighlightedId(g.id); triggerSelectHint(); }}
                       style={{ cursor: 'pointer' }}
                     >
                       <div className={styles.nearbyRank}>#{i + 1}</div>

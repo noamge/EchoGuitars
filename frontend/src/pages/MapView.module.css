@@ -914,3 +914,33 @@
 .toastHint {
   background: rgba(8, 145, 178, 0.82);
 }
+
+/* ── Loading spinner ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+.volunteerGpsBtnInline:disabled {
+  opacity: 1 !important;
+}
+.volunteerGpsBtnInline.locating {
+  background: #0891b2;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.detectBtn:disabled { opacity: 0.5; }
+.detectBtn.locating {
+  animation: pulse 1.2s ease-in-out infinite;
+}
