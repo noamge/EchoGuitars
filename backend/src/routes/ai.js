@@ -38,4 +38,20 @@ router.post('/parse-update', async (req, res) => {
   }
 });
 
+// POST /api/ai/smart-query
+// Body: { text }  →  { type: "answer", answer } | { type: "actions", actions }
+router.post('/smart-query', async (req, res) => {
+  const { text } = req.body;
+  if (!text || !text.trim()) return res.status(400).json({ error: 'text is required' });
+  try {
+    const { smartQuery } = require('../services/aiService');
+    const guitars = process.env.GOOGLE_SHEET_ID ? await getAllGuitars() : [];
+    const result = await smartQuery(text, guitars);
+    res.json(result);
+  } catch (err) {
+    console.error('AI smart-query error:', err.message, err.response?.data);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

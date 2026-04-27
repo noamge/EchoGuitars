@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   getGuitarsByName, updateGuitar, searchDonors,
-  parseGeneralUpdate, addGuitar,
+  smartQuery, addGuitar,
 } from '../api/client';
 import { Sparkles, CheckCircle, AlertCircle, X } from 'lucide-react';
 import styles from './QuickEdit.module.css';
@@ -67,16 +67,22 @@ function getActionLabel(action) {
 }
 
 function AiMode() {
-  const [text, setText]               = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [actions, setActions]         = useState(null);
-  const [confirmed, setConfirmed]     = useState({});
+  const [text, setText]                     = useState('');
+  const [loading, setLoading]               = useState(false);
+  const [history, setHistory]               = useState([]); // { q, type, answer?, actions? }
+  const [currentActions, setCurrentActions] = useState(null);
+  const [confirmed, setConfirmed]           = useState({});
   const [matchedGuitars, setMatchedGuitars] = useState({});
-  const [chosenIds, setChosenIds]     = useState({});
-  const [saving, setSaving]           = useState(false);
-  const [saveResults, setSaveResults] = useState([]);
-  const [recording, setRecording]     = useState(false);
-  const recognitionRef                = useRef(null);
+  const [chosenIds, setChosenIds]           = useState({});
+  const [saving, setSaving]                 = useState(false);
+  const [saveResults, setSaveResults]       = useState([]);
+  const [recording, setRecording]           = useState(false);
+  const recognitionRef                      = useRef(null);
+  const bottomRef                           = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [history, currentActions]);
 
   const startRecording = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -91,17 +97,25 @@ function AiMode() {
   };
   const stopRecording = () => { recognitionRef.current?.stop(); setRecording(false); };
 
-  const handleAnalyze = async () => {
+  const handleSend = async () => {
     if (!text.trim()) return;
-    setLoading(true); setActions(null); setSaveResults([]); setConfirmed({}); setMatchedGuitars({}); setChosenIds({});
+    const q = text.trim();
+    setText('');
+    setLoading(true); setCurrentActions(null); setSaveResults([]); setConfirmed({}); setMatchedGuitars({}); setChosenIds({});
     try {
-      const res = await parseGeneralUpdate(text);
-      setActions(res.actions || []);
-    } catch (err) { alert('שגיאת AI: ' + err.message); }
-    finally { setLoading(false); }
+      const res = await smartQuery(q);
+      if (res.type === 'answer') {
+        setHistory(h => [...h, { q, type: 'answer', answer: res.answer }]);
+      } else {
+        setHistory(h => [...h, { q, type: 'actions' }]);
+        setCurrentActions(res.actions || []);
+      }
+    } catch (err) {
+      setHistory(h => [...h, { q, type: 'answer', answer: `שגיאה: ${err.message}` }]);
+    } finally { setLoading(false); }
   };
 
-  const removeAction = idx => setActions(p => p.filter((_, i) => i !== idx));
+  const removeAction = idx => setCurrentActions(p => p.filter((_, i) => i !== idx));
 
   const handleConfirm = async (idx, action) => {
     setConfirmed(c => ({ ...c, [idx]: true }));
@@ -111,11 +125,11 @@ function AiMode() {
   };
 
   const handleSave = async () => {
-    if (!actions?.length) return;
+    if (!currentActions?.length) return;
     setSaving(true); setSaveResults([]);
     const results = [];
-    for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
+    for (let i = 0; i < currentActions.length; i++) {
+      const action = currentActions[i];
       if (action.confidence === 'low' && !confirmed[i]) { results.push({ action, ok: false, err: 'דולג — לא אושר' }); continue; }
       const guitarId = chosenIds[i] ?? action.guitarId;
       if (!guitarId) { results.push({ action, ok: false, err: 'גיטרה לא זוהתה' }); continue; }
@@ -129,33 +143,42 @@ function AiMode() {
       catch (err) { results.push({ action, ok: false, err: err.message }); }
     }
     setSaveResults(results); setSaving(false);
+    if (results.every(r => r.ok)) {
+      setHistory(h => [...h, { q: '', type: 'answer', answer: `✅ נשמרו ${results.length} פעולות בהצלחה` }]);
+      setCurrentActions(null);
+    }
   };
 
-  const highCount = actions ? actions.filter((a, i) => { const id = chosenIds[i] ?? a.guitarId; return id && (a.confidence !== 'low' || confirmed[i]); }).length : 0;
+  const highCount = currentActions ? currentActions.filter((a, i) => { const id = chosenIds[i] ?? a.guitarId; return id && (a.confidence !== 'low' || confirmed[i]); }).length : 0;
 
   return (
-    <div className={styles.form}>
-      <label className={styles.label}>עדכון בטקסט חופשי</label>
-      <div style={{ position: 'relative' }}>
-        <textarea className={styles.textarea} rows={5}
-          placeholder="למשל: איספתי את הגיטרה של כהן מתל אביב..."
-          value={text} onChange={e => setText(e.target.value)} dir="rtl" style={{ paddingLeft: 48 }}
-        />
-        <button type="button" onClick={recording ? stopRecording : startRecording}
-          style={{ position:'absolute',left:10,bottom:10,background:recording?'#ef4444':'#6b7280',color:'#fff',border:'none',borderRadius:'50%',width:34,height:34,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,cursor:'pointer' }}>
-          {recording ? '⏹' : '🎙'}
-        </button>
-      </div>
-      {recording && <div style={{ color:'#ef4444',fontSize:13 }}>● מקליט... דבר עכשיו</div>}
-      <button type="button" className={styles.analyzeBtn} onClick={handleAnalyze} disabled={!text.trim() || loading}>
-        <Sparkles size={16} />{loading ? 'מנתח...' : 'נתח'}
-      </button>
+    <div className={styles.aiChat}>
+      {/* History */}
+      {history.length === 0 && (
+        <div className={styles.aiWelcome}>
+          <Sparkles size={22} />
+          <p>שאל שאלה על הנתונים או תן פקודת עדכון בעברית חופשית</p>
+          <div className={styles.aiExamples}>
+            <span>כמה אקוסטיות לא נאספו?</span>
+            <span>מה קורה עם הגיטרה של כהן?</span>
+            <span>איספתי את הגיטרה של לוי מחיפה</span>
+          </div>
+        </div>
+      )}
+      {history.map((entry, i) => (
+        <div key={i} className={styles.aiEntry}>
+          {entry.q && <div className={styles.aiUserBubble}>{entry.q}</div>}
+          {entry.type === 'answer' && <div className={styles.aiAnswerBubble}><Sparkles size={14} />{entry.answer}</div>}
+          {entry.type === 'actions' && <div className={styles.aiAnswerBubble}><Sparkles size={14} />זיהיתי פעולות עדכון — ראה למטה</div>}
+        </div>
+      ))}
 
-      {actions !== null && (
+      {/* Current action cards */}
+      {currentActions !== null && (
         <div className={styles.previewSection}>
-          <div className={styles.previewTitle}>תוצאות — {actions.length} פעולות זוהו</div>
-          {actions.length === 0 && <div style={{ color:'var(--text-muted)',fontSize:13 }}>לא זוהו פעולות</div>}
-          {actions.map((action, idx) => {
+          <div className={styles.previewTitle}>{currentActions.length} פעולות זוהו</div>
+          {currentActions.length === 0 && <div style={{ color:'var(--text-muted)',fontSize:13 }}>לא זוהו פעולות</div>}
+          {currentActions.map((action, idx) => {
             const isLow = action.confidence === 'low';
             const isConf = confirmed[idx];
             return (
@@ -205,13 +228,38 @@ function AiMode() {
               ))}
             </div>
           )}
-          {actions.length > 0 && saveResults.length === 0 && (
+          {currentActions.length > 0 && saveResults.length === 0 && (
             <button type="button" className={styles.submitBtn} onClick={handleSave} disabled={saving || highCount === 0}>
               {saving ? 'שומר...' : `✓ אשר ושמור (${highCount} פעולות)`}
             </button>
           )}
         </div>
       )}
+
+      <div ref={bottomRef} />
+
+      {/* Input */}
+      <div className={styles.aiInputRow}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <textarea
+            className={styles.aiInput}
+            rows={2}
+            placeholder="שאל שאלה או תן פקודת עדכון..."
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+            dir="rtl"
+          />
+          <button type="button" onClick={recording ? stopRecording : startRecording}
+            style={{ position:'absolute',left:8,bottom:8,background:recording?'#ef4444':'#6b7280',color:'#fff',border:'none',borderRadius:'50%',width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,cursor:'pointer' }}>
+            {recording ? '⏹' : '🎙'}
+          </button>
+        </div>
+        <button type="button" className={styles.aiSendBtn} onClick={handleSend} disabled={!text.trim() || loading}>
+          {loading ? '...' : <Sparkles size={18} />}
+        </button>
+      </div>
+      {recording && <div style={{ color:'#ef4444',fontSize:12,marginTop:4 }}>● מקליט...</div>}
     </div>
   );
 }

@@ -64,6 +64,9 @@ export const validateAddress = (rawText) =>
 export const parseGeneralUpdate = (text) =>
   api.post('/ai/parse-update', { text }).then(r => r.data);
 
+export const smartQuery = (text) =>
+  api.post('/ai/smart-query', { text }).then(r => r.data);
+
 export const getAllGuitarsForSelect = () =>
   api.get('/guitars').then(r => r.data);
 

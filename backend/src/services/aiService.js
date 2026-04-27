@@ -133,4 +133,80 @@ If a guitar cannot be identified at all, include it with guitarId: null and conf
   return { actions: parsed.actions || [] };
 }
 
-module.exports = { parseGuitarNotes, parseGeneralUpdate };
+function computeStats(guitars) {
+  const total = guitars.length;
+  const collected = guitars.filter(g => g.collected).length;
+  const notCollected = total - collected;
+
+  const byType = { אקוסטית: 0, קלאסית: 0, חשמלית: 0, אחר: 0 };
+  const notCollectedByType = { אקוסטית: 0, קלאסית: 0, חשמלית: 0, אחר: 0 };
+  const regions = {};
+  let repaired = 0, inRepair = 0;
+
+  for (const g of guitars) {
+    const tk = ['אקוסטית', 'קלאסית', 'חשמלית'].includes(g.guitarType) ? g.guitarType : 'אחר';
+    byType[tk]++;
+    if (!g.collected) notCollectedByType[tk]++;
+    const region = g.region || 'אחר';
+    regions[region] = (regions[region] || 0) + 1;
+    if (g.repaired) repaired++;
+    else if (g.whoRepairs) inRepair++;
+  }
+
+  const regionStats = Object.entries(regions)
+    .sort(([, a], [, b]) => b - a)
+    .map(([r, c]) => `${r}: ${c}`)
+    .join(' | ');
+
+  return { total, collected, notCollected, byType, notCollectedByType, repaired, inRepair, regionStats };
+}
+
+async function smartQuery(text, guitars) {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not configured');
+
+  const s = computeStats(guitars);
+
+  const guitarLines = guitars
+    .map(g => `${g.id} | ${g.name} | ${g.city} | ${g.guitarType || '?'} | ${g.collected ? 'נאסף' : 'ממתין'} | ${g.repaired ? 'תוקן' : g.whoRepairs ? `בתיקון אצל ${g.whoRepairs}` : ''}`)
+    .join('\n');
+
+  const prompt = `אתה עוזר חכם של מיזם "EchoGuitars" — מיזם תרומת גיטרות לילדים בישראל.
+
+=== סטטיסטיקות בסיס הנתונים ===
+סה"כ גיטרות: ${s.total}
+נאספו: ${s.collected} | טרם נאספו: ${s.notCollected}
+לפי סוג — אקוסטית: ${s.byType.אקוסטית} | קלאסית: ${s.byType.קלאסית} | חשמלית: ${s.byType.חשמלית} | אחר: ${s.byType.אחר}
+טרם נאספו לפי סוג — אקוסטית: ${s.notCollectedByType.אקוסטית} | קלאסית: ${s.notCollectedByType.קלאסית} | חשמלית: ${s.notCollectedByType.חשמלית}
+תוקנו: ${s.repaired} | בתיקון כרגע: ${s.inRepair}
+לפי אזור: ${s.regionStats}
+
+=== רשימת כל הגיטרות (לשיוך שמות) ===
+מזהה | שם | עיר | סוג | סטטוס | תיקון
+${guitarLines}
+
+=== קלט המשתמש ===
+"${text}"
+
+=== הוראות ===
+קבע אם זו שאלה על הנתונים או פקודת עדכון.
+
+אם זו שאלה (שואל על סטטיסטיקות, כמויות, פרטים ספציפיים):
+→ ענה בעברית תמציתית. החזר: { "type": "answer", "answer": "<תשובה בעברית>" }
+
+אם זו פקודת עדכון (נאסף, תוקן, נתרם, הערה):
+→ החזר: { "type": "actions", "actions": [{ "guitarId": <מזהה|null>, "guitarName": "<שם>", "action": "collected|repaired|in_repair|donated|notes", "donatedTo": <null|שם>, "whoRepairs": <null|שם>, "notes": <null|טקסט>, "confidence": "high|low", "question": <null|שאלה בעברית> }] }
+
+השב אך ורק ב-JSON תקין, ללא הסברים.`;
+
+  const response = await axios.post(
+    ANTHROPIC_API_URL,
+    { model: 'claude-sonnet-4-6', max_tokens: 1024, messages: [{ role: 'user', content: prompt }] },
+    { headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' } }
+  );
+
+  const rawText = response.data.content[0].text.trim();
+  const jsonText = rawText.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+  return JSON.parse(jsonText);
+}
+
+module.exports = { parseGuitarNotes, parseGeneralUpdate, smartQuery };
