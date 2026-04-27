@@ -272,6 +272,7 @@ export default function QuickEdit() {
   // Guitar selection (shared across all action types)
   const [searchQuery, setSearchQuery]     = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching]         = useState(false);
   const [selectedGuitars, setSelectedGuitars] = useState([]);
   const searchTimeout = useRef(null);
 
@@ -295,7 +296,7 @@ export default function QuickEdit() {
 
   // Reset state when switching action
   useEffect(() => {
-    setSelectedGuitars([]); setSearchQuery(''); setSearchResults([]);
+    setSelectedGuitars([]); setSearchQuery(''); setSearchResults([]); setSearching(false);
     setNewDonorMode(false); setNewDonorName(''); setNewDonorPhone(''); setNewDonorCity(''); setNewDonorGuitarType('');
     setCollector(''); setDestination(''); setCollectNotes(''); setWhoRepairs(''); setOrgName('');
     setActionResults([]);
@@ -303,10 +304,12 @@ export default function QuickEdit() {
 
   // Debounced donor search
   useEffect(() => {
-    if (searchQuery.length < 2) { setSearchResults([]); return; }
+    if (searchQuery.length < 2) { setSearchResults([]); setSearching(false); return; }
+    setSearching(true);
     clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(async () => {
       try { setSearchResults(await searchDonors(searchQuery)); } catch { setSearchResults([]); }
+      finally { setSearching(false); }
     }, 300);
     return () => clearTimeout(searchTimeout.current);
   }, [searchQuery]);
@@ -483,7 +486,12 @@ export default function QuickEdit() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-            {searchResults.length > 0 && (
+            {searching && (
+              <div className={styles.searchingIndicator}>
+                <span className={styles.searchSpinner} /> מחפש...
+              </div>
+            )}
+            {!searching && searchResults.length > 0 && (
               <div className={styles.searchResults}>
                 {searchResults.map((d, i) => (
                   <div key={i} className={styles.searchResultItem} onClick={() => handleDonorClick(d)}>
@@ -492,7 +500,7 @@ export default function QuickEdit() {
                 ))}
               </div>
             )}
-            {searchQuery.length >= 2 && searchResults.length === 0 && (
+            {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
               <div className={styles.newDonorPrompt}>
                 <span>"{searchQuery}" לא נמצא</span>
                 <button type="button" className={styles.newDonorBtn} onClick={openNewDonorMode}>

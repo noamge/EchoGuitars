@@ -37,7 +37,7 @@
   font-weight: 600;
   color: var(--text);
   display: block;
-  margin-bottom: -6px;
+  margin-bottom: 6px;
 }
 
 .input, .select, .textarea {
@@ -678,6 +678,30 @@
 }
 
 /* ── New donor prompt / form ─────────────────────────────────────────────── */
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.searchingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.searchSpinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
 
 .newDonorPrompt {
   display: flex;
