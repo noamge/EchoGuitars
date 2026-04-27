@@ -249,6 +249,17 @@
 }
 
 @media (max-width: 560px) {
-  .tabs { flex-wrap: wrap; }
-  .tab { padding: 7px 10px; font-size: 12px; }
+  .tabs { gap: 0; }
+  .tab {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 11px;
+    gap: 2px;
+  }
+  .tabBadge, .tabBadgeGray {
+    padding: 1px 4px;
+    min-width: 14px;
+    font-size: 10px;
+  }
 }

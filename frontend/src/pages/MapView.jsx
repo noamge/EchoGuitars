@@ -337,6 +337,7 @@ export default function MapView({
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [viewMode, setViewMode]           = useState('cluster');
   const [showToast, setShowToast]         = useState(isVolunteer);
+  const [showSelectHint, setShowSelectHint] = useState(false);
   const [selectedIds, setSelectedIds]     = useState(new Set());
   const [nearbyLimit, setNearbyLimit]     = useState(10);
   const [savingCollection, setSavingCollection] = useState(false);
@@ -350,6 +351,13 @@ export default function MapView({
     const t = setTimeout(() => setShowToast(false), 6000);
     return () => clearTimeout(t);
   }, [isVolunteer]);
+
+  useEffect(() => {
+    if (!isVolunteer || !highlightedId) return;
+    setShowSelectHint(true);
+    const t = setTimeout(() => setShowSelectHint(false), 4000);
+    return () => clearTimeout(t);
+  }, [highlightedId, isVolunteer]);
 
   useEffect(() => {
     getGuitarsForMap()
@@ -532,6 +540,12 @@ export default function MapView({
           <span className={styles.toastIcon}>⏳</span>
           בפתיחה ראשונה הנתונים עשויים להיטען לאחר מספר שניות – נא להמתין
           <button className={styles.toastClose} onClick={() => setShowToast(false)}>✕</button>
+        </div>
+      )}
+      {isVolunteer && (
+        <div className={`${styles.toast} ${styles.toastHint} ${showSelectHint ? styles.toastVisible : styles.toastHidden}`}>
+          <span className={styles.toastIcon}>🎸</span>
+          בחר גיטרות אפשריות לאיסוף ולחץ על המשך
         </div>
       )}
 
