@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 
-const ADMIN_EMAIL = 'Noamge@gmail.com';
+const ADMIN_EMAIL = 'noamge@gmail.com';
 
 function getClient() {
   return new Resend(process.env.RESEND_API_KEY);
