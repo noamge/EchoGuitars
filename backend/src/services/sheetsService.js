@@ -114,6 +114,7 @@ const ALL_KNOWN_CITIES = [
   ...Object.keys(CITY_TO_REGION),
   'אילת', 'דימונה', 'ערד', 'רהט', 'נתיבות', 'שדרות', 'אשקלון', 'אשדוד',
   'קריית גת', 'קריית מלאכי', 'גדרה', 'יבנה', 'נס ציונה',
+  'אורנית', 'אֳרָנִית', 'אלעד', 'ביתר עילית', 'עלי', 'ענתות', 'מעלה אפרים',
 ];
 
 function normalizeCity(raw) {
@@ -130,11 +131,20 @@ const NON_CITY_PATTERNS = [
   /^אמסור/, /^מסרתי/, /לנועם/, /לגבע/, /צור קשר/, /בוואטסאפ/,
 ];
 
+function cityWordMatch(src, city) {
+  // Must match city as a whole word (not inside another word like "יבנה" inside "הליבנה")
+  const escaped = city.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?:^|[\\s,/\\-״׳])${escaped}(?:$|[\\s,/\\-״׳])`).test(src)
+    || src === city
+    || src.startsWith(city + ' ') || src.startsWith(city + ',')
+    || src.endsWith(' ' + city) || src.endsWith(',' + city);
+}
+
 function extractCity(rawCity, rawStreet) {
   const sources = [rawCity, rawStreet].filter(Boolean);
   for (const src of sources) {
     for (const city of ALL_KNOWN_CITIES) {
-      if (src.includes(city)) return city;
+      if (cityWordMatch(src, city)) return city;
     }
   }
   const normalized = normalizeCity(rawCity || '');
