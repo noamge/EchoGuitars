@@ -76,9 +76,10 @@ export default function App() {
     }
   }, [volunteerInfo, collection]);
 
-  const handleRemoveFromCollection = useCallback((guitarId) => {
+  const handleRemoveFromCollection = useCallback(async (guitarId) => {
     if (!collection) return;
-    // Optimistic update — state changes immediately (animation already played in MapView)
+    const collectionId = collection.id;
+    // Optimistic update
     setCollection(prev => {
       if (!prev) return prev;
       const remaining = prev.guitars.filter(g => g.id !== guitarId);
@@ -88,10 +89,16 @@ export default function App() {
       }
       return { ...prev, guitars: remaining };
     });
-    // API call in background, non-blocking
-    removeGuitarFromCollection(collection.id, guitarId).catch(err =>
-      console.error('Remove guitar error:', err.message)
-    );
+    try {
+      await removeGuitarFromCollection(collectionId, guitarId);
+    } catch (err) {
+      console.error('Remove guitar error:', err.message);
+      // Reload the real collection state from server on failure
+      try {
+        const col = await getVolunteerCollection(collectionId);
+        if (col) { setCollection(col); localStorage.setItem('volunteer_collection_id', collectionId); }
+      } catch {}
+    }
   }, [collection]);
 
   const handleSendToAdmin = useCallback(async () => {
