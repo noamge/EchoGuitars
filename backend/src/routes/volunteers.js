@@ -98,24 +98,26 @@ router.post('/collection', async (req, res) => {
       // Lock only newly added guitars
       for (const g of toAdd) {
         try { await lockGuitar(g.id, volunteerName); } catch {}
-        await logAction(volunteerName, 'guitar_locked', g.id, g.name, `נעול לרשימת האיסוף`);
+        try { await logAction(volunteerName, 'guitar_locked', g.id, g.name, `נעול לרשימת האיסוף`); } catch {}
       }
     } else {
       // Create new collection
       collection = await createCollection(volunteerName, volunteerAddress, newGuitars);
       for (const g of newGuitars) {
         try { await lockGuitar(g.id, volunteerName); } catch {}
-        await logAction(volunteerName, 'guitar_locked', g.id, g.name, `נוסף לרשימת איסוף`);
+        try { await logAction(volunteerName, 'guitar_locked', g.id, g.name, `נוסף לרשימת איסוף`); } catch {}
       }
     }
 
     // Send email notification (non-blocking)
+    const emailGuitars = collection.guitars.filter(g => g.status === 'selected');
+    console.log(`[email] save — volunteer: ${volunteerName}, guitars: ${emailGuitars.length}`);
     sendCollectionEmail({
       volunteerName,
       volunteerAddress,
-      guitars: collection.guitars.filter(g => g.status === 'selected'),
+      guitars: emailGuitars,
       action: 'saved',
-    }).catch(() => {});
+    }).catch(err => console.error('[email] save catch:', err.message));
 
     res.json(collection);
   } catch (err) {
