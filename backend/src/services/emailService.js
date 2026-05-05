@@ -24,14 +24,19 @@ async function sendCollectionEmail({ volunteerName, volunteerAddress, guitars, a
   }
 
   try {
-    await getClient().emails.send({
+    const result = await getClient().emails.send({
       from: 'EchoGuitars <onboarding@resend.dev>',
       to: ADMIN_EMAIL,
       subject,
       text,
     });
+    if (result?.error) {
+      console.error('Resend error:', JSON.stringify(result.error));
+    } else {
+      console.log('Email sent OK, id:', result?.data?.id);
+    }
   } catch (err) {
-    console.error('Email send failed (non-fatal):', err.message);
+    console.error('Email send failed:', err.message, err.response?.data || '');
   }
 }
 
