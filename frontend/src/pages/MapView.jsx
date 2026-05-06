@@ -349,12 +349,23 @@ export default function MapView({
   const [removingGuitarId, setRemovingGuitarId] = useState(null); // fade-out animation
   const [confirmModal, setConfirmModal]   = useState(null); // { id, name, city, phone }
   const [thankyouModal, setThankyouModal] = useState(null); // { name, city }
+  const [wazeHint, setWazeHint]           = useState(false);
 
   useEffect(() => {
     if (!isVolunteer) return;
     const t = setTimeout(() => setShowToast(false), 6000);
     return () => clearTimeout(t);
   }, [isVolunteer]);
+
+  const openWaze = useCallback((city, street) => {
+    const addr = [street, city].filter(Boolean).join(', ');
+    const url = `https://waze.com/ul?q=${encodeURIComponent(addr)}&navigate=yes`;
+    setWazeHint(true);
+    setTimeout(() => {
+      setWazeHint(false);
+      window.location.href = url;
+    }, 2000);
+  }, []);
 
   const hintShownRef = useRef(false);
   const triggerSelectHint = useCallback(() => {
@@ -563,6 +574,12 @@ export default function MapView({
           בחר גיטרות אפשריות לאיסוף ולחץ על &apos;המשך&apos;
         </div>
       )}
+      {isVolunteer && wazeHint && (
+        <div className={`${styles.toast} ${styles.toastWaze} ${styles.toastVisible}`}>
+          <span className={styles.toastIcon}>⚠️</span>
+          יש לוודא שהכתובת בווייז תואמת את כתובת התורם
+        </div>
+      )}
 
       {/* ── Map side ── */}
       <div className={`${styles.mapSide} ${nearbyExpanded ? styles.mapSideCollapsed : ''} ${mapFullscreen ? styles.mapSideFullscreen : ''}`}>
@@ -732,6 +749,11 @@ export default function MapView({
                           </a>
                         </div>
                       )}
+                      {(g.city || g.street) && !isDone && !isAdminCollected && (
+                        <button className={styles.wazeBtn} onClick={e => { e.stopPropagation(); openWaze(g.city, g.street); }}>
+                          🗺️ נווט בווייז
+                        </button>
+                      )}
                       {sl && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: sl.color }}>{sl.text}</span>
@@ -870,6 +892,11 @@ export default function MapView({
                             <a href={`tel:${g.phone}`} className={styles.nearbyPhone}>📞 {g.phone}</a>
                             <a href={toWhatsApp(g.phone)} target="_blank" rel="noopener noreferrer" className={styles.waBtn}><WaIcon /><span className={styles.waBtnLabel}>לתיאום איסוף</span></a>
                           </div>
+                        )}
+                        {isVolunteer && (g.city || g.street) && !lockedByOther && (
+                          <button className={styles.wazeBtn} onClick={e => { e.stopPropagation(); openWaze(g.city, g.street); }}>
+                            🗺️ נווט בווייז
+                          </button>
                         )}
                         {lockedByOther && (
                           <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, marginTop: 3 }}>🔒 בתהליך איסוף ע"י מתנדב אחר</div>

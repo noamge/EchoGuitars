@@ -185,7 +185,15 @@ router.patch('/collection/:id/mark-collected', async (req, res) => {
     );
     const result = await updateCollectionRow(req.params.id, { guitars: updated });
     const guitar = collection.guitars.find(g => g.id === Number(guitarId));
-    if (guitar) await logAction(collection.volunteerName, 'guitar_marked_collected', guitarId, guitar.name, 'סומנה כנאספת — ממתינה לאישור מנהל');
+    if (guitar) {
+      try { await logAction(collection.volunteerName, 'guitar_marked_collected', guitarId, guitar.name, 'סומנה כנאספת — ממתינה לאישור מנהל'); } catch {}
+      sendCollectionEmail({
+        volunteerName: collection.volunteerName,
+        volunteerAddress: collection.volunteerAddress,
+        guitars: [guitar],
+        action: 'collected',
+      }).catch(() => {});
+    }
 
     res.json(result);
   } catch (err) {

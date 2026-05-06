@@ -915,6 +915,29 @@
   background: rgba(8, 145, 178, 0.82);
 }
 
+.toastWaze {
+  background: rgba(145, 100, 8, 0.88);
+}
+
+.wazeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 4px 10px;
+  background: #00b4f0;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.wazeBtn:hover { background: #0097cc; }
+
 /* ── Loading spinner ── */
 @keyframes spin {
   to { transform: rotate(360deg); }
