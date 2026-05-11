@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -295,6 +295,20 @@ router.patch('/:id', async (req, res) => {
     res.json(updated);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/guitars/admin/repair-ids — one-time fix for duplicate/missing IDs
+// Add ?dry=true to preview without writing
+router.post('/admin/repair-ids', async (req, res) => {
+  try {
+    if (useMock()) return res.json({ repaired: 0, details: [] });
+    const dry = req.query.dry === 'true';
+    const result = await repairGuitarIds(dry);
+    res.json(result);
+  } catch (err) {
+    console.error('repair-ids error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

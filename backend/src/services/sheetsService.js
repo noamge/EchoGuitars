@@ -494,15 +494,8 @@ async function addGuitar(data) {
   }
   const newRowIndex = lastNameRow + 1;
 
-  // Find max stable ID from column U
-  const idRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!U2:U`,
-  });
-  const maxId = (idRes.data.values || []).reduce((max, r) => {
-    const n = Number(r[0] || 0); return n > max ? n : max;
-  }, 1);
-  const newId = maxId + 1;
+  // Use timestamp as ID — unique even under concurrent writes, immune to Wix interleaving
+  const newId = Date.now();
 
   const row = new Array(23).fill('');
   row[COL.SUBMISSION_TIME] = formatSubmissionTime();
@@ -701,6 +694,95 @@ async function getActionLog(limit = 200) {
   return rows.reverse().slice(0, limit);
 }
 
+// ── One-time ID repair ────────────────────────────────────────────────────────
+// Assigns unique IDs to rows with empty column U, and resolves duplicate IDs.
+// Also patches any Collections entries that referenced the old (row-index) IDs.
+async function repairGuitarIds(dryRun = false) {
+  const sheets = getSheetsClient();
+
+  // Read all guitar rows
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!A2:W`,
+  });
+  const rows = res.data.values || [];
+
+  // First pass: collect all non-empty IDs and find duplicates
+  const idFirstRow = {}; // id -> first rowIndex that legitimately holds it
+  let maxId = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const rowIndex = i + 2;
+    const uVal = (rows[i][COL.ID] || '').trim();
+    if (uVal) {
+      const id = Number(uVal);
+      if (!isNaN(id) && id > 0) {
+        if (id > maxId) maxId = id;
+        if (idFirstRow[id] === undefined) idFirstRow[id] = rowIndex;
+      }
+    }
+  }
+  // Make sure we start new IDs above everything existing
+  const usedIds = new Set(Object.keys(idFirstRow).map(Number));
+  let nextId = maxId + 1;
+  function allocateId() {
+    while (usedIds.has(nextId)) nextId++;
+    usedIds.add(nextId);
+    return nextId++;
+  }
+
+  // Second pass: identify rows that need a new ID
+  // oldId is what the app currently uses for this row (rowIndex when U is empty)
+  const repairs = [];
+  for (let i = 0; i < rows.length; i++) {
+    const rowIndex = i + 2;
+    const row = rows[i];
+    if (!row[COL.NAME] || !row[COL.NAME].trim()) continue; // skip blank rows
+
+    const uVal = (row[COL.ID] || '').trim();
+    if (!uVal) {
+      // Empty U — the app uses rowIndex as the id fallback
+      repairs.push({ rowIndex, oldId: rowIndex, newId: allocateId(), name: row[COL.NAME] });
+    } else {
+      const id = Number(uVal);
+      if (!isNaN(id) && id > 0 && idFirstRow[id] !== rowIndex) {
+        // Duplicate — not the first holder of this id, reassign
+        repairs.push({ rowIndex, oldId: id, newId: allocateId(), name: row[COL.NAME] });
+      }
+    }
+  }
+
+  if (repairs.length === 0) return { repaired: 0, collectionPatches: 0, details: [] };
+
+  if (!dryRun) {
+    // Write new IDs to column U
+    const batchData = repairs.map(r => ({
+      range: `${SHEET_TAB}!U${r.rowIndex}`,
+      values: [[String(r.newId)]],
+    }));
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      requestBody: { valueInputOption: 'USER_ENTERED', data: batchData },
+    });
+
+    // Patch any Collections that referenced an old id
+    const oldToNew = Object.fromEntries(repairs.map(r => [r.oldId, r.newId]));
+    const allCols = await getCollections();
+    let collectionPatches = 0;
+    for (const col of allCols) {
+      const updated = col.guitars.map(g => oldToNew[g.id] ? { ...g, id: oldToNew[g.id] } : g);
+      if (updated.some((g, i) => g.id !== col.guitars[i].id)) {
+        await updateCollectionRow(col.id, { guitars: updated });
+        collectionPatches++;
+      }
+    }
+
+    return { repaired: repairs.length, collectionPatches, details: repairs };
+  }
+
+  return { repaired: repairs.length, collectionPatches: '(dry-run)', details: repairs };
+}
+
 module.exports = {
   getAllGuitars,
   getGuitarByName,
@@ -723,4 +805,6 @@ module.exports = {
   // Action Log
   logAction,
   getActionLog,
+  // One-time repair
+  repairGuitarIds,
 };
