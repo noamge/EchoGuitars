@@ -429,16 +429,27 @@ async function findAndUpdateCity(stableId, newCity, newStreet) {
 async function applyRowFormatting(sheets, targetRow1Based) {
   const meta = await sheets.spreadsheets.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    fields: 'sheets(properties,bandedRanges)',
+    fields: 'sheets(properties,bandedRanges,basicFilter)',
   });
   const tab = meta.data.sheets.find(s => s.properties.title === SHEET_TAB);
   if (!tab) return;
 
-  const tabId    = tab.properties.sheetId;
-  const rowIdx0  = targetRow1Based - 1; // 0-based start
-  const needed   = targetRow1Based + 1; // exclusive end for banding (0-based)
+  const tabId   = tab.properties.sheetId;
+  const rowIdx0 = targetRow1Based - 1;        // 0-based row index
+  const needed  = targetRow1Based + 1;         // exclusive end (0-based) for banding
 
   const requests = [];
+
+  // If a basicFilter exists and its range doesn't reach the new row,
+  // we must clear it before extending the banding (otherwise Google Sheets
+  // throws "remove the filter that overlaps with the conversion area").
+  // After extending the banding we re-apply the filter with the new end.
+  const filter = tab.basicFilter;
+  const filterNeedsUpdate = filter && filter.range && filter.range.endRowIndex < needed;
+
+  if (filterNeedsUpdate) {
+    requests.push({ clearBasicFilter: { sheetId: tabId } });
+  }
 
   // Extend banded range so the row gets table formatting
   for (const br of tab.bandedRanges || []) {
@@ -473,6 +484,16 @@ async function applyRowFormatting(sheets, targetRow1Based) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       requestBody: { requests },
+    });
+  }
+
+  // Re-apply the filter with the updated (wider) range in a separate call,
+  // because setBasicFilter and clearBasicFilter can't coexist in one batch.
+  if (filterNeedsUpdate) {
+    const newFilterRange = { ...filter.range, endRowIndex: needed };
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      requestBody: { requests: [{ setBasicFilter: { filter: { range: newFilterRange } } }] },
     });
   }
 }
