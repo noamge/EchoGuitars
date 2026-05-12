@@ -16,7 +16,8 @@
 - **Geocoding:** Google Maps Geocoding API
 - **AI:** Anthropic Claude API (claude-sonnet-4-6)
 - **Upload תמונות:** Cloudinary
-- **Deploy:** Frontend ב-Vercel, Backend ב-Railway
+- **Deploy:** Backend ב-**Render**, Frontend — לבדוק
+- **Email:** Resend (RESEND_API_KEY ב-Render env vars)
 
 ### מבנה קבצים מרכזי
 ```
@@ -135,6 +136,67 @@ backend/src/
 - עמודה W בגיליון הקיים = שם המתנדב שנעל, ריק = זמינה (range עודכן מ-A:V ל-A:W בכל הקוד)
 - collection_id נשמר ב-localStorage של הדפדפן
 - כתובת המתנדב → auto-geocode במפה לנקודת מוצא
+
+---
+
+---
+
+### 2026-04-23 עד 2026-05-12 — תכונות ותיקונים מרובים
+
+**קבצים שהשתנו (עיקריים):**
+- `backend/src/services/sheetsService.js` — ID strategy, city matching, applyRowFormatting, repairGuitarIds
+- `backend/src/routes/volunteers.js` — admin-mark-collected, email notifications, logAction בטוח
+- `backend/src/routes/guitars.js` — repair-ids endpoint
+- `backend/src/services/emailService.js` — תיקון כתובת admin (noamge@gmail.com), תמיכה ב-action collected
+- `backend/src/services/aiService.js` — smartQuery (תשובות + פעולות), computeStats
+- `frontend/src/pages/MapView.jsx` — כפתור Waze, GPS fallback, toast hints, volunteer crash fix
+- `frontend/src/pages/Volunteers.jsx` — tabs בשורה אחת, admin-collected status, badge
+- `frontend/src/pages/QuickEdit.jsx` — AI chat mode עם היסטוריה
+- `frontend/src/components/Layout.jsx` — badge מתרענן בניווט
+
+**מה נעשה:**
+
+**מערכת מתנדבים:**
+- טאב "ממתין לאישור" / "אקטיביות" / "היסטוריה" / "לוג" — כולם גלויים בשורה אחת
+- מנהל יכול לסמן גיטרה כ-"נאספה כבר" (admin_collected) — מעדכן גיטרה בגיליון הראשי ישירות
+- status חדש: `admin_collected` — שונה מ-`approved` (שזה לאחר אישור תהליך המתנדב)
+
+**מיילים (Resend):**
+- נשלח מייל בכל: שמירת רשימה, הסרת גיטרה, סימון "נאספתי"
+- FROM: `EchoGuitars <onboarding@resend.dev>` | TO: `noamge@gmail.com`
+- **חשוב:** Resend רגיש לרישיות — `noamge` ולא `Noamge`
+
+**Waze:**
+- כפתור Waze בכרטיסיות גיטרה (מפה + רשימה)
+- toast אזהרה 2 שניות לפני הפניה (חלון רגיל כי מובייל חוסם popup)
+- hint "לחץ לבחירה" רק בלחיצה ראשונה, 8 שניות
+
+**AI ב-QuickEdit:**
+- chat interface עם היסטוריה
+- `smartQuery(text, guitars)` — מחזיר `{type:"answer", answer}` או `{type:"actions", actions}`
+
+**תיקוני באגים:**
+- crash מתנדב "משהו השתבש": `useRef` חסר ב-MapView
+- toast מופיע בטעינה: state מאותחל ל-`null` ולא `false`
+- מייל 403: Resend רגיש לרישיות בכתובת TO
+- city matching: `"הליבנה".includes("יבנה")` → תוקן ל-word-boundary regex
+- אורנית נוספה לרשימת הערים הידועות
+- badge כתובות לא מתנקה: Layout re-fetch בכל שינוי route + סינון skipped
+- guitar תקוע ב-collection: handleRemoveFromCollection ממתין לAPI ומרפרש במקרה כישלון
+
+**ID Deduplication (2026-05-11):**
+- `addGuitar()` עכשיו משתמש ב-`Date.now()` כ-ID (לא maxId+1)
+- נוסף `repairGuitarIds()` + endpoint `POST /api/guitars/admin/repair-ids?dry=true`
+- בדיקה בפועל: הגיליון היה נקי (0 כפילויות)
+
+**banded range + filter (2026-05-11-12):**
+- `applyRowFormatting()` תוקן: מנקה basicFilter לפני הרחבת banding ומשחזר אחר כך
+- **סיבה:** Google Sheets דוחה הרחבת banding שחוצה גבול פילטר קיים
+- בגיליון החי: banding + filter הורחבו ל-360, 40 שורות רפאים (עם ID בלבד) נמחקו
+
+**דברים לשים לב:**
+- `rowIndex` השתנה לחלק מהגיטרות לאחר מחיקת שורות רפאים — לא משנה כי כל חיפוש הוא לפי ID ב-עמודה U
+- הגיליון כרגע ב-322 שורות (כולל כותרת) — banding מכסה עד 360
 
 ---
 
