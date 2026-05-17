@@ -15,6 +15,11 @@ function normalizeCity(city) {
   return city.replace(/\bקרית\s/g, 'קריית ');
 }
 
+// Strip Hebrew vowel points (nikud) so "אֳרָנִית" == "אורנית"
+function stripNikud(s) {
+  return s.replace(/[ְ-ׇ]/g, '');
+}
+
 // Extract a specific component type from Google's address_components
 function extractComponent(components, type) {
   const comp = components.find(c => c.types.includes(type));
@@ -53,10 +58,24 @@ async function geocodeAddress(street, city) {
         extractComponent(components, 'locality') ||
         extractComponent(components, 'administrative_area_level_2') || '';
       if (resultLocality) {
-        const reqNorm = normalizeCity(city).trim();
-        const mismatch =
-          !resultLocality.includes(reqNorm) && !reqNorm.includes(resultLocality);
+        const reqNorm = stripNikud(normalizeCity(city).trim());
+        const resNorm = stripNikud(normalizeCity(resultLocality).trim());
+        // Bare consonants: remove ו/י (mater lectionis) for comparison.
+        // Handles "קריית"/"קרית" (double vs single yod) and nikud-form "אֳרָנִית" vs "אורנית".
+        const bare = s => s.replace(/[וי]/g, '');
+        // Skip check when Google returns a Latin-script name (some small cities have no Hebrew result)
+        const isHebrew = /[א-ת]/.test(resultLocality);
+        const mismatch = isHebrew &&
+          !resNorm.includes(reqNorm) && !reqNorm.includes(resNorm) &&
+          !bare(resNorm).includes(bare(reqNorm)) && !bare(reqNorm).includes(bare(resNorm));
         if (mismatch) {
+          // Street was mismatched to a different city — fall back to city-only pin
+          if (street) {
+            const cityOnlyResult = await geocodeAddress('', city);
+            const fallback = cityOnlyResult ? { ...cityOnlyResult, cityOnly: true } : null;
+            cache.set(query, fallback);
+            return fallback;
+          }
           cache.set(query, null);
           return null;
         }

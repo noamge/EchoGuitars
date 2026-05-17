@@ -172,13 +172,19 @@ router.get('/address-issues', async (req, res) => {
     const impreciseStreet = withStreet.filter((_, i) =>
       geocodeResults[i]?.cityOnly === true && !addressVerifiedIds.has(withStreet[i].id)
     );
+    // geocodeAddress returned null — street was matched to a wrong city or failed entirely
+    const geocodeFailed = withStreet.filter((_, i) =>
+      geocodeResults[i] === null && !addressVerifiedIds.has(withStreet[i].id)
+    );
     const impreciseIds = new Set(impreciseStreet.map(g => g.id));
+    const geocodeFailedIds = new Set(geocodeFailed.map(g => g.id));
     const missingCityIds = new Set(missingCity.map(g => g.id));
 
     // Exclude manually-verified guitars from missingCity too
     const issues = [
       ...missingCity.filter(g => !addressVerifiedIds.has(g.id)),
       ...impreciseStreet.filter(g => !missingCityIds.has(g.id)),
+      ...geocodeFailed.filter(g => !missingCityIds.has(g.id) && !impreciseIds.has(g.id)),
     ];
 
     res.json(issues.map(g => ({
@@ -192,7 +198,7 @@ router.get('/address-issues', async (req, res) => {
       region: g.region,
       guitarType: g.guitarType,
       collected: g.collected,
-      impreciseStreet: impreciseIds.has(g.id),
+      impreciseStreet: impreciseIds.has(g.id) || geocodeFailedIds.has(g.id),
     })));
   } catch (err) {
     res.status(500).json({ error: err.message });
