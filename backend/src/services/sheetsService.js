@@ -515,8 +515,18 @@ async function addGuitar(data) {
   }
   const newRowIndex = lastNameRow + 1;
 
-  // Use timestamp as ID — unique even under concurrent writes, immune to Wix interleaving
-  const newId = Date.now();
+  // Sequential ID: find max existing ID in column U and increment
+  const idRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!U2:U`,
+  });
+  const idRows = idRes.data.values || [];
+  let maxId = 0;
+  for (const [val] of idRows) {
+    const n = Number(val);
+    if (n > 0 && n < 1e10 && n > maxId) maxId = n;
+  }
+  const newId = maxId + 1;
 
   const row = new Array(23).fill('');
   row[COL.SUBMISSION_TIME] = formatSubmissionTime();
@@ -728,7 +738,7 @@ async function repairGuitarIds(dryRun = false) {
   });
   const rows = res.data.values || [];
 
-  // First pass: collect all non-empty IDs and find duplicates
+  // First pass: collect valid sequential IDs (ignore timestamps >= 1e10)
   const idFirstRow = {}; // id -> first rowIndex that legitimately holds it
   let maxId = 0;
 
@@ -737,13 +747,12 @@ async function repairGuitarIds(dryRun = false) {
     const uVal = (rows[i][COL.ID] || '').trim();
     if (uVal) {
       const id = Number(uVal);
-      if (!isNaN(id) && id > 0) {
+      if (!isNaN(id) && id > 0 && id < 1e10) {
         if (id > maxId) maxId = id;
         if (idFirstRow[id] === undefined) idFirstRow[id] = rowIndex;
       }
     }
   }
-  // Make sure we start new IDs above everything existing
   const usedIds = new Set(Object.keys(idFirstRow).map(Number));
   let nextId = maxId + 1;
   function allocateId() {
@@ -766,7 +775,10 @@ async function repairGuitarIds(dryRun = false) {
       repairs.push({ rowIndex, oldId: rowIndex, newId: allocateId(), name: row[COL.NAME] });
     } else {
       const id = Number(uVal);
-      if (!isNaN(id) && id > 0 && idFirstRow[id] !== rowIndex) {
+      if (!isNaN(id) && id >= 1e10) {
+        // Timestamp-style ID — replace with sequential
+        repairs.push({ rowIndex, oldId: id, newId: allocateId(), name: row[COL.NAME] });
+      } else if (!isNaN(id) && id > 0 && idFirstRow[id] !== rowIndex) {
         // Duplicate — not the first holder of this id, reassign
         repairs.push({ rowIndex, oldId: id, newId: allocateId(), name: row[COL.NAME] });
       }
