@@ -13,12 +13,6 @@ const nav = [
   { to: '/volunteers',     label: 'מתנדבים',           Icon: Users,   badgeKey: 'volunteers' },
 ];
 
-function getSkippedCount() {
-  try {
-    const stored = localStorage.getItem('address_review_skipped');
-    return stored ? Object.keys(JSON.parse(stored)).length : 0;
-  } catch { return 0; }
-}
 
 export default function Layout() {
   const location = useLocation();
@@ -27,9 +21,7 @@ export default function Layout() {
   const [volunteerBadge, setVolunteerBadge] = useState(0);
 
   useEffect(() => {
-    getAddressIssuesCount()
-      .then(count => setAddressBadge(Math.max(0, count - getSkippedCount())))
-      .catch(() => {});
+    getAddressIssuesCount().then(setAddressBadge).catch(() => {});
     getVolunteerPendingCount().then(setVolunteerBadge).catch(() => {});
   }, [location.pathname]);
 

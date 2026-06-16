@@ -58,6 +58,9 @@ export const getAddressIssuesCount = () =>
 export const updateGuitarCity = (id, city, street) =>
   api.patch(`/guitars/${id}/city`, { city, street }).then(r => r.data);
 
+export const skipAddressIssue = (id) =>
+  api.post(`/guitars/address-issues/skip/${id}`).then(r => r.data);
+
 export const validateAddress = (rawText) =>
   api.post('/guitars/validate-address', { rawText }).then(r => r.data);
 

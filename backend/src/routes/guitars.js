@@ -8,9 +8,9 @@ function useMock() {
   return !process.env.GOOGLE_SHEET_ID;
 }
 
-// In-memory set of guitar IDs whose address was manually confirmed via the UI.
-// Persists within the current server process (cleared on redeploy).
+// In-memory sets of guitar IDs — cleared on redeploy, shared across all clients.
 const addressVerifiedIds = new Set();
+const skippedAddressIds  = new Set();
 
 async function fetchGuitars() {
   if (useMock()) {
@@ -148,11 +148,23 @@ router.post('/validate-address', async (req, res) => {
 router.get('/address-issues/count', async (req, res) => {
   try {
     const guitars = await fetchGuitars();
-    const count = guitars.filter(g => !g.city || !g.city.trim()).length;
+    const count = guitars.filter(g =>
+      (!g.city || !g.city.trim()) &&
+      !addressVerifiedIds.has(g.id) &&
+      !skippedAddressIds.has(g.id)
+    ).length;
     res.json({ count });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/guitars/address-issues/skip/:id — mark address as skipped (server-side, shared across devices)
+router.post('/address-issues/skip/:id', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+  skippedAddressIds.add(id);
+  res.json({ ok: true });
 });
 
 // GET /api/guitars/address-issues — guitars where city could not be identified,
@@ -180,11 +192,11 @@ router.get('/address-issues', async (req, res) => {
     const geocodeFailedIds = new Set(geocodeFailed.map(g => g.id));
     const missingCityIds = new Set(missingCity.map(g => g.id));
 
-    // Exclude manually-verified guitars from missingCity too
+    const excluded = g => addressVerifiedIds.has(g.id) || skippedAddressIds.has(g.id);
     const issues = [
-      ...missingCity.filter(g => !addressVerifiedIds.has(g.id)),
-      ...impreciseStreet.filter(g => !missingCityIds.has(g.id)),
-      ...geocodeFailed.filter(g => !missingCityIds.has(g.id) && !impreciseIds.has(g.id)),
+      ...missingCity.filter(g => !excluded(g)),
+      ...impreciseStreet.filter(g => !excluded(g) && !missingCityIds.has(g.id)),
+      ...geocodeFailed.filter(g => !excluded(g) && !missingCityIds.has(g.id) && !impreciseIds.has(g.id)),
     ];
 
     res.json(issues.map(g => ({

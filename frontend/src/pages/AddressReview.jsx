@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAddressIssues, updateGuitarCity, validateAddress } from '../api/client';
+import { getAddressIssues, updateGuitarCity, validateAddress, skipAddressIssue } from '../api/client';
 import styles from './AddressReview.module.css';
 
 export default function AddressReview() {
@@ -7,15 +7,10 @@ export default function AddressReview() {
   const [loading, setLoading]         = useState(true);
   const [cityEdits, setCityEdits]     = useState({});
   const [streetEdits, setStreetEdits] = useState({});
-  const [saved, setSaved]             = useState({});   // id → true (Google confirmed precise)
+  const [saved, setSaved]             = useState({});
   const [saving, setSaving]           = useState({});
-  const [saveWarning, setSaveWarning] = useState({});   // id → warning message after save
-  const [skipped, setSkipped] = useState(() => {
-    try {
-      const stored = localStorage.getItem('address_review_skipped');
-      return stored ? JSON.parse(stored) : {};
-    } catch { return {}; }
-  });
+  const [saveWarning, setSaveWarning] = useState({});
+  const [skipped, setSkipped]         = useState({});
   const [search, setSearch]           = useState('');
   const [suggestions, setSuggestions] = useState({});   // id → { city, street, ... } | 'loading' | 'none'
 
@@ -198,11 +193,10 @@ export default function AddressReview() {
                   </button>
                   <button
                     className={styles.skipBtn}
-                    onClick={() => setSkipped(s => {
-                      const next = { ...s, [g.id]: true };
-                      try { localStorage.setItem('address_review_skipped', JSON.stringify(next)); } catch {}
-                      return next;
-                    })}
+                    onClick={() => {
+                      skipAddressIssue(g.id).catch(() => {});
+                      setSkipped(s => ({ ...s, [g.id]: true }));
+                    }}
                   >
                     דלג
                   </button>
