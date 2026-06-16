@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -8,9 +8,12 @@ function useMock() {
   return !process.env.GOOGLE_SHEET_ID;
 }
 
-// In-memory sets of guitar IDs — cleared on redeploy, shared across all clients.
+// In-memory sets of guitar IDs — shared across all clients.
 const addressVerifiedIds = new Set();
 const skippedAddressIds  = new Set();
+
+// Load persisted skipped IDs from the sheet on startup
+loadSkippedAddressIds().then(ids => ids.forEach(id => skippedAddressIds.add(id))).catch(() => {});
 
 async function fetchGuitars() {
   if (useMock()) {
@@ -159,11 +162,12 @@ router.get('/address-issues/count', async (req, res) => {
   }
 });
 
-// POST /api/guitars/address-issues/skip/:id — mark address as skipped (server-side, shared across devices)
-router.post('/address-issues/skip/:id', (req, res) => {
+// POST /api/guitars/address-issues/skip/:id — mark address as skipped, persisted to sheet cell X1
+router.post('/address-issues/skip/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
   skippedAddressIds.add(id);
+  saveSkippedAddressIds([...skippedAddressIds]).catch(() => {});
   res.json({ ok: true });
 });
 
