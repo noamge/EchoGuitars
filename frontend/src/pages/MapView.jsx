@@ -195,7 +195,8 @@ function MapMarkers({
         {isVolunteer && !g.collected && (
           lockedByOther ? (
             <div style={{ textAlign: 'center', fontSize: 12, color: '#7c3aed', fontWeight: 600, marginTop: 6 }}>
-              🔒 גיטרה זו בתהליך איסוף
+              🔒 בתהליך איסוף ע"י {g.inCollection}
+              {g.inCollectionDate && <span style={{ fontWeight: 400, marginRight: 4 }}>({g.inCollectionDate})</span>}
             </div>
           ) : inMyCollection ? (
             <div style={{ textAlign: 'center', fontSize: 12, color: '#16a34a', fontWeight: 600, marginTop: 6 }}>
@@ -499,17 +500,14 @@ export default function MapView({
 
   const filters = ['הכל', 'נאסף', 'ממתין'];
   const visible = isVolunteer
-    // Volunteers: hide collected + hide guitars locked by OTHER volunteers
-    ? guitars.filter(g => !g.collected && (!g.inCollection || g.inCollection === myName))
+    ? guitars.filter(g => !g.collected)
     : filter === 'הכל' ? guitars
     : filter === 'נאסף' ? guitars.filter(g => g.collected)
     : guitars.filter(g => !g.collected);
 
   const calcNearby = useCallback((lat, lon) => {
-    // Exclude guitars locked by other volunteers from the nearby list
     const uncollected = guitars.filter(g =>
-      !g.collected && g.lat && g.lon &&
-      (!g.inCollection || g.inCollection === myName)
+      !g.collected && g.lat && g.lon
     );
     const withDist = uncollected.map(g => ({ ...g, distance: haversine(lat, lon, g.lat, g.lon) }));
     withDist.sort((a, b) => a.distance - b.distance);
@@ -899,7 +897,9 @@ export default function MapView({
                           </button>
                         )}
                         {lockedByOther && (
-                          <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, marginTop: 3 }}>🔒 בתהליך איסוף ע"י מתנדב אחר</div>
+                          <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600, marginTop: 3 }}>
+                            🔒 {g.inCollection}{g.inCollectionDate ? ` (${g.inCollectionDate})` : ''}
+                          </div>
                         )}
                         {inMyCol && !lockedByOther && (
                           <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600, marginTop: 3 }}>✓ ברשימת האיסוף שלך</div>

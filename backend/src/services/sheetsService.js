@@ -288,7 +288,8 @@ function rowToGuitar(row, rowIndex) {
     model:     row[COL.MODEL] || '',
     donatedTo: row[COL.DONATED_TO] || '',
     imageUrl:  row[COL.IMAGE_URL]  || '',
-    inCollection: row[COL.IN_COLLECTION] || '',  // volunteer name locking this guitar
+    inCollection: (row[COL.IN_COLLECTION] || '').split('|')[0].trim(),
+    inCollectionDate: (row[COL.IN_COLLECTION] || '').split('|')[1]?.trim() || '',
     region:    getRegion(city),
   };
 }
@@ -375,7 +376,7 @@ async function lockGuitar(stableId, volunteerName) {
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: `${SHEET_TAB}!W${rowIndex}`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [[volunteerName]] },
+    requestBody: { values: [[volunteerName + '|' + new Date().toISOString().slice(0, 10)]] },
   });
 }
 
