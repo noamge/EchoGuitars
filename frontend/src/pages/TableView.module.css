@@ -232,3 +232,54 @@
   outline: none;
   box-sizing: border-box;
 }
+
+.newRow {
+  background: #fff7ed;
+  border-right: 3px solid #f97316;
+}
+
+.newCountBadge {
+  background: #f97316;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.waThankBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #25d366;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.waThankBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #25d366;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.waThankBtnDisabled {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+}

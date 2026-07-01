@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getGuitars, updateGuitar, deleteGuitar } from '../api/client';
+import { getGuitars, updateGuitar, deleteGuitar, getThankedIds, thankGuitar } from '../api/client';
 import styles from './TableView.module.css';
 
 function toWhatsApp(phone) {
@@ -10,6 +10,27 @@ function toWhatsApp(phone) {
   else if (p.startsWith('0')) p = '972' + p.slice(1);
   else if (p.startsWith('5')) p = '972' + p;
   return `https://wa.me/${p}`;
+}
+
+const THANK_MSG = encodeURIComponent(`תודה ענקית על התרומה למיזם אקו! 🙏
+1. מה הכתובת המדויקת לאיסוף הגיטרה?
+2. האם יש לך אפשרות להעביר את הגיטרה לתל אביב או לכרמיאל?
+3. ייתכן ויקח קצת זמן לתאם איסוף, אודה לסבלנותכם😌
+
+נועם גבע, 'אקו - גיטרה לכל ילד'🎸
+
+https://www.instagram.com/echo_guitars25/
+
+https://www.facebook.com/profile.php?id=61583010691069`);
+
+const CUTOFF = new Date(2026, 6, 1);
+
+function parseSubDate(str) {
+  if (!str) return null;
+  const [datePart] = str.split(' ');
+  const parts = datePart.split('\\');
+  if (parts.length < 3) return null;
+  return new Date(+parts[2], +parts[1] - 1, +parts[0]);
 }
 
 function WaIcon() {
@@ -66,12 +87,16 @@ export default function TableView() {
   const [togglingRepaired, setTogglingRepaired] = useState(null);
   const [editingWhoRepairs, setEditingWhoRepairs] = useState(null); // guitar id
   const [whoRepairsValue, setWhoRepairsValue]     = useState('');
+  const [thankedIds, setThankedIds] = useState(new Set());
+  const [thanking, setThanking]     = useState(null);
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
 
   useEffect(() => {
-    getGuitars().then(setGuitars).finally(() => setLoading(false));
+    Promise.all([getGuitars(), getThankedIds()])
+      .then(([g, ids]) => { setGuitars(g); setThankedIds(new Set(ids)); })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSort = (key) => {
@@ -98,17 +123,33 @@ export default function TableView() {
         COLUMNS.some(col => String(g[col.key] ?? '').toLowerCase().includes(q))
       );
     }
+
+    const checkIsNew = (g) => {
+      const d = parseSubDate(g.submissionTime);
+      return !!(d && d >= CUTOFF && !thankedIds.has(g.id));
+    };
+
+    let newOnes = rows.filter(checkIsNew);
+    let rest = rows.filter(g => !checkIsNew(g));
+
     if (sortKey) {
-      rows = [...rows].sort((a, b) => {
-        const av = sortValue(a, sortKey);
-        const bv = sortValue(b, sortKey);
+      const sf = (a, b) => {
+        const av = sortValue(a, sortKey), bv = sortValue(b, sortKey);
         if (av < bv) return sortDir === 'asc' ? -1 : 1;
         if (av > bv) return sortDir === 'asc' ? 1 : -1;
         return 0;
-      });
+      };
+      newOnes = [...newOnes].sort(sf);
+      rest = [...rest].sort(sf);
     }
-    return rows;
-  }, [guitars, filterField, filterValue, search, sortKey, sortDir]);
+
+    return [...newOnes, ...rest];
+  }, [guitars, filterField, filterValue, search, sortKey, sortDir, thankedIds]);
+
+  const newCount = useMemo(() => guitars.filter(g => {
+    const d = parseSubDate(g.submissionTime);
+    return !!(d && d >= CUTOFF && !thankedIds.has(g.id));
+  }).length, [guitars, thankedIds]);
 
   const markCollected = async (id) => {
     setMarking(id);
@@ -132,6 +173,18 @@ export default function TableView() {
       alert('שגיאה במחיקה: ' + err.message);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleThank = async (id) => {
+    setThanking(id);
+    try {
+      await thankGuitar(id);
+      setThankedIds(prev => new Set([...prev, id]));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setThanking(null);
     }
   };
 
@@ -185,6 +238,9 @@ export default function TableView() {
             onChange={e => setSearch(e.target.value)}
           />
           <span className={styles.count}>{filtered.length} רשומות</span>
+          {newCount > 0 && (
+            <span className={styles.newCountBadge}>{newCount} חדשות 🆕</span>
+          )}
         </div>
       </header>
 
@@ -217,75 +273,107 @@ export default function TableView() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(g => (
-                <tr key={g.id} className={g.collected ? styles.collected : ''}>
-                  {COLUMNS.map(col => (
-                    <td key={col.key} style={{ maxWidth: col.width }}>
-                      {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
-                    </td>
-                  ))}
+              {filtered.map(g => {
+                const isNewGuitar = (() => { const d = parseSubDate(g.submissionTime); return !!(d && d >= CUTOFF && !thankedIds.has(g.id)); })();
+                return (
+                  <tr key={g.id} className={[g.collected ? styles.collected : '', isNewGuitar ? styles.newRow : ''].filter(Boolean).join(' ')}>
+                    {COLUMNS.map(col => (
+                      <td key={col.key} style={{ maxWidth: col.width }}>
+                        {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
+                      </td>
+                    ))}
 
-                  {/* תוקן — toggle button */}
-                  <td style={{ textAlign: 'center' }}>
-                    <button
-                      className={g.repaired ? styles.repairedBtnOn : styles.repairedBtnOff}
-                      onClick={() => toggleRepaired(g)}
-                      disabled={togglingRepaired === g.id}
-                      title={g.repaired ? 'סמן כלא תוקן' : 'סמן כתוקן'}
-                    >
-                      {togglingRepaired === g.id ? '...' : g.repaired ? '✓' : '—'}
-                    </button>
-                  </td>
-
-                  {/* מי מתקן — inline edit */}
-                  <td style={{ maxWidth: 120 }}>
-                    {editingWhoRepairs === g.id ? (
-                      <input
-                        className={styles.whoRepairsInput}
-                        value={whoRepairsValue}
-                        autoFocus
-                        placeholder="שם המתקן..."
-                        onChange={e => setWhoRepairsValue(e.target.value)}
-                        onBlur={() => saveWhoRepairs(g.id)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') saveWhoRepairs(g.id);
-                          if (e.key === 'Escape') setEditingWhoRepairs(null);
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className={styles.whoRepairsDisplay}
-                        onClick={() => startEditWhoRepairs(g)}
-                        title="לחץ לעריכה"
-                      >
-                        {g.whoRepairs || <span style={{ color: '#9ca3af' }}>לחץ לעריכה</span>}
-                      </span>
-                    )}
-                  </td>
-
-                  <td>
-                    <div className={styles.actionCell}>
-                      {!g.collected && (
-                        <button
-                          className={styles.collectBtn}
-                          onClick={() => markCollected(g.id)}
-                          disabled={marking === g.id}
-                        >
-                          {marking === g.id ? '...' : '✓ נאסף'}
-                        </button>
-                      )}
+                    {/* תוקן — toggle button */}
+                    <td style={{ textAlign: 'center' }}>
                       <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDelete(g)}
-                        disabled={deleting === g.id}
-                        title="מחק רשומה"
+                        className={g.repaired ? styles.repairedBtnOn : styles.repairedBtnOff}
+                        onClick={() => toggleRepaired(g)}
+                        disabled={togglingRepaired === g.id}
+                        title={g.repaired ? 'סמן כלא תוקן' : 'סמן כתוקן'}
                       >
-                        {deleting === g.id ? '...' : '🗑'}
+                        {togglingRepaired === g.id ? '...' : g.repaired ? '✓' : '—'}
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+
+                    {/* מי מתקן — inline edit */}
+                    <td style={{ maxWidth: 120 }}>
+                      {editingWhoRepairs === g.id ? (
+                        <input
+                          className={styles.whoRepairsInput}
+                          value={whoRepairsValue}
+                          autoFocus
+                          placeholder="שם המתקן..."
+                          onChange={e => setWhoRepairsValue(e.target.value)}
+                          onBlur={() => saveWhoRepairs(g.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') saveWhoRepairs(g.id);
+                            if (e.key === 'Escape') setEditingWhoRepairs(null);
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className={styles.whoRepairsDisplay}
+                          onClick={() => startEditWhoRepairs(g)}
+                          title="לחץ לעריכה"
+                        >
+                          {g.whoRepairs || <span style={{ color: '#9ca3af' }}>לחץ לעריכה</span>}
+                        </span>
+                      )}
+                    </td>
+
+                    <td>
+                      <div className={styles.actionCell}>
+                        {/* WhatsApp thank-you button */}
+                        {isNewGuitar ? (
+                          g.phone ? (
+                            <a
+                              href={`${toWhatsApp(g.phone)}?text=${THANK_MSG}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.waThankBtn}
+                              onClick={() => handleThank(g.id)}
+                            >
+                              <WaIcon /> תודה
+                            </a>
+                          ) : (
+                            <span className={styles.waThankBtnDisabled} title="אין מספר טלפון">
+                              אין טלפון
+                            </span>
+                          )
+                        ) : (
+                          g.phone && (
+                            <a
+                              href={`${toWhatsApp(g.phone)}?text=${THANK_MSG}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.waThankBtnSecondary}
+                            >
+                              <WaIcon />
+                            </a>
+                          )
+                        )}
+                        {!g.collected && (
+                          <button
+                            className={styles.collectBtn}
+                            onClick={() => markCollected(g.id)}
+                            disabled={marking === g.id}
+                          >
+                            {marking === g.id ? '...' : '✓ נאסף'}
+                          </button>
+                        )}
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(g)}
+                          disabled={deleting === g.id}
+                          title="מחק רשומה"
+                        >
+                          {deleting === g.id ? '...' : '🗑'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

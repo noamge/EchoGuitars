@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { BarChart2, Map, ClipboardList, Table, MapPin, Users, X, Menu } from 'lucide-react';
-import { getAddressIssuesCount, getVolunteerPendingCount } from '../api/client';
+import { getAddressIssuesCount, getVolunteerPendingCount, getNewGuitarsCount } from '../api/client';
 import styles from './Layout.module.css';
 
 const nav = [
   { to: '/',               label: 'דשבורד',            Icon: BarChart2 },
   { to: '/map',            label: 'מפה',               Icon: Map },
   { to: '/collect',        label: 'עדכון מהיר',        Icon: ClipboardList },
-  { to: '/table',          label: 'טבלת נתונים',       Icon: Table },
+  { to: '/table',          label: 'טבלת נתונים',       Icon: Table,   badgeKey: 'newGuitars' },
   { to: '/address-review', label: 'כתובות לא מזוהות', Icon: MapPin,  badgeKey: 'addressIssues' },
   { to: '/volunteers',     label: 'מתנדבים',           Icon: Users,   badgeKey: 'volunteers' },
 ];
@@ -19,15 +19,18 @@ export default function Layout() {
   const [open, setOpen]                     = useState(false);
   const [addressBadge, setAddressBadge]     = useState(0);
   const [volunteerBadge, setVolunteerBadge] = useState(0);
+  const [newGuitarsBadge, setNewGuitarsBadge] = useState(0);
 
   useEffect(() => {
     getAddressIssuesCount().then(setAddressBadge).catch(() => {});
     getVolunteerPendingCount().then(setVolunteerBadge).catch(() => {});
+    getNewGuitarsCount().then(setNewGuitarsBadge).catch(() => {});
   }, [location.pathname]);
 
   const getBadge = (key) => {
     if (key === 'addressIssues') return addressBadge;
     if (key === 'volunteers')    return volunteerBadge;
+    if (key === 'newGuitars')    return newGuitarsBadge;
     return 0;
   };
 

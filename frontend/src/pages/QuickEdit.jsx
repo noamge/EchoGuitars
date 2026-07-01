@@ -7,6 +7,14 @@ import {
 import { Sparkles, CheckCircle, AlertCircle, X } from 'lucide-react';
 import styles from './QuickEdit.module.css';
 
+function toWhatsApp(phone) {
+  if (!phone) return null;
+  let p = phone.replace(/\D/g, '');
+  if (p.startsWith('0')) p = '972' + p.slice(1);
+  else if (p.startsWith('5')) p = '972' + p;
+  return `https://wa.me/${p}`;
+}
+
 const GUITAR_TYPES = ['קלאסית', 'אקוסטית', 'חשמלית'];
 
 const ACTIONS = [
@@ -546,12 +554,32 @@ export default function QuickEdit() {
           {/* Results */}
           {actionResults.length > 0 && (
             <div className={styles.actionResults}>
-              {actionResults.map(({ guitar, ok, err }) => (
-                <div key={guitar.id} className={`${styles.actionResult} ${ok ? styles.actionResultOk : styles.actionResultErr}`}>
-                  {ok ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-                  <span>{guitar.name} — {ok ? 'עודכן בהצלחה' : `שגיאה: ${err}`}</span>
-                </div>
-              ))}
+              {actionResults.map(({ guitar, ok, err }) => {
+                const isDonate = activeAction === 'donate' && ok;
+                const waPhone = guitar.phone ? toWhatsApp(guitar.phone) : null;
+                const donateMsg = encodeURIComponent(`היי! מעדכן שהגיטרה שתרמת למיזם - נתרמה ל${orgName}`);
+                return (
+                  <div key={guitar.id} className={`${styles.actionResult} ${ok ? styles.actionResultOk : styles.actionResultErr}`}>
+                    {ok ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+                    <span>{guitar.name} — {ok ? 'עודכן בהצלחה' : `שגיאה: ${err}`}</span>
+                    {isDonate && (
+                      waPhone ? (
+                        <a
+                          href={`${waPhone}?text=${donateMsg}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#25d366', color:'white', borderRadius:6, padding:'2px 8px', fontSize:12, fontWeight:600, textDecoration:'none', marginRight:8 }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 32 32" fill="white"><path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/></svg>
+                          עדכן תורם
+                        </a>
+                      ) : (
+                        <span style={{ fontSize:11, color:'#9ca3af', marginRight:8 }}>אין טלפון</span>
+                      )
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

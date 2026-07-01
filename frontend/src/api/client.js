@@ -79,6 +79,15 @@ export const addGuitar = (data) =>
 export const deleteGuitar = (id) =>
   api.delete(`/guitars/${id}`).then(r => r.data);
 
+export const getThankedIds = () =>
+  api.get('/guitars/thanked-ids').then(r => r.data);
+
+export const thankGuitar = (id) =>
+  api.post(`/guitars/thank/${id}`).then(r => r.data);
+
+export const getNewGuitarsCount = () =>
+  api.get('/guitars/new-count').then(r => r.data.count);
+
 // ── Volunteers ────────────────────────────────────────────────────────────────
 
 export const getVolunteerCollections = () =>

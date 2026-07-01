@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds, loadThankedIds, saveThankedIds } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -14,6 +14,19 @@ const skippedAddressIds  = new Set();
 
 // Load persisted skipped IDs from the sheet on startup
 loadSkippedAddressIds().then(ids => ids.forEach(id => skippedAddressIds.add(id))).catch(() => {});
+
+const thankedIds = new Set();
+loadThankedIds().then(ids => ids.forEach(id => thankedIds.add(id))).catch(() => {});
+
+const THANK_CUTOFF = new Date(2026, 6, 1); // July 1, 2026
+
+function parseSubmissionDate(str) {
+  if (!str) return null;
+  const [datePart] = str.split(' ');
+  const parts = datePart.split('\\');
+  if (parts.length < 3) return null;
+  return new Date(+parts[2], +parts[1] - 1, +parts[0]);
+}
 
 async function fetchGuitars() {
   if (useMock()) {
@@ -272,6 +285,34 @@ router.patch('/:id/city', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/guitars/thanked-ids
+router.get('/thanked-ids', (req, res) => {
+  res.json([...thankedIds]);
+});
+
+// GET /api/guitars/new-count — count of new unthanked guitars (added >= 2026-07-01)
+router.get('/new-count', async (req, res) => {
+  try {
+    const guitars = await fetchGuitars();
+    const count = guitars.filter(g => {
+      const d = parseSubmissionDate(g.submissionTime);
+      return d && d >= THANK_CUTOFF && !thankedIds.has(g.id);
+    }).length;
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/guitars/thank/:id — mark guitar as thanked, persisted to sheet cell Y1
+router.post('/thank/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+  thankedIds.add(id);
+  saveThankedIds([...thankedIds]).catch(() => {});
+  res.json({ ok: true });
 });
 
 // GET /api/guitars/:id — single record by stable ID

@@ -842,6 +842,30 @@ async function saveSkippedAddressIds(ids) {
   });
 }
 
+async function loadThankedIds() {
+  if (!process.env.GOOGLE_SHEET_ID) return [];
+  const sheets = getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!Y1`,
+  });
+  try {
+    const val = res.data.values?.[0]?.[0];
+    return val ? JSON.parse(val) : [];
+  } catch { return []; }
+}
+
+async function saveThankedIds(ids) {
+  if (!process.env.GOOGLE_SHEET_ID) return;
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!Y1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[JSON.stringify(ids)]] },
+  });
+}
+
 module.exports = {
   getAllGuitars,
   getGuitarByName,
@@ -869,4 +893,7 @@ module.exports = {
   // Skipped addresses
   loadSkippedAddressIds,
   saveSkippedAddressIds,
+  // Thanked IDs
+  loadThankedIds,
+  saveThankedIds,
 };
