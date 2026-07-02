@@ -234,8 +234,13 @@
 }
 
 .newRow {
-  background: #fff7ed;
-  border-right: 3px solid #f97316;
+  background: #ffedd5;
+  border-right: 5px solid #ea580c;
+  font-weight: 500;
+}
+
+.newRow td:first-child::before {
+  content: '🆕 ';
 }
 
 .newCountBadge {

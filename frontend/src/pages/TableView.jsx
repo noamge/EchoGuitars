@@ -132,16 +132,17 @@ export default function TableView() {
     let newOnes = rows.filter(checkIsNew);
     let rest = rows.filter(g => !checkIsNew(g));
 
-    if (sortKey) {
-      const sf = (a, b) => {
-        const av = sortValue(a, sortKey), bv = sortValue(b, sortKey);
-        if (av < bv) return sortDir === 'asc' ? -1 : 1;
-        if (av > bv) return sortDir === 'asc' ? 1 : -1;
-        return 0;
-      };
-      newOnes = [...newOnes].sort(sf);
-      rest = [...rest].sort(sf);
-    }
+    const sf = sortKey
+      ? (a, b) => {
+          const av = sortValue(a, sortKey), bv = sortValue(b, sortKey);
+          if (av < bv) return sortDir === 'asc' ? -1 : 1;
+          if (av > bv) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        }
+      : (a, b) => b.id - a.id; // default: newest (highest ID) first
+
+    newOnes = [...newOnes].sort(sf);
+    rest    = [...rest].sort(sf);
 
     return [...newOnes, ...rest];
   }, [guitars, filterField, filterValue, search, sortKey, sortDir, thankedIds]);
