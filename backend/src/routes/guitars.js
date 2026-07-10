@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds, loadThankedIds, saveThankedIds } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds, loadThankedIds, saveThankedIds, loadAddressVerifiedIds, saveAddressVerifiedIds } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -12,8 +12,9 @@ function useMock() {
 const addressVerifiedIds = new Set();
 const skippedAddressIds  = new Set();
 
-// Load persisted skipped IDs from the sheet on startup
+// Load persisted IDs from the sheet on startup
 loadSkippedAddressIds().then(ids => ids.forEach(id => skippedAddressIds.add(id))).catch(() => {});
+loadAddressVerifiedIds().then(ids => ids.forEach(id => addressVerifiedIds.add(id))).catch(() => {});
 
 const thankedIds = new Set();
 loadThankedIds().then(ids => ids.forEach(id => thankedIds.add(id))).catch(() => {});
@@ -23,7 +24,7 @@ const THANK_CUTOFF = new Date(2026, 6, 1); // July 1, 2026
 function parseSubmissionDate(str) {
   if (!str) return null;
   const [datePart] = str.split(' ');
-  const parts = datePart.split('\\');
+  const parts = datePart.split('/');
   if (parts.length < 3) return null;
   return new Date(+parts[2], +parts[1] - 1, +parts[0]);
 }
@@ -264,6 +265,7 @@ router.patch('/:id/city', async (req, res) => {
     const result = await findAndUpdateCity(id, city, street);
     clearGeocodeCache();
     addressVerifiedIds.add(id); // remember this address was manually confirmed
+    saveAddressVerifiedIds([...addressVerifiedIds]).catch(() => {});
 
     // Verify precision using the same geocoding logic as /address-issues.
     // Wrapped in try/catch so a geocoding failure never breaks the save response.

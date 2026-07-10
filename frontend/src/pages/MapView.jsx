@@ -177,7 +177,7 @@ function MapMarkers({
         <div className={styles.popupMeta}>
           <span>{g.guitarType || 'לא ידוע'}</span>
           <span className={g.collected ? styles.collected : styles.pending}>
-            {g.collected ? '✓ נאסף' : lockedByOther ? '🔒 בתהליך איסוף' : 'ממתין'}
+            {g.collected ? '✓ נאסף' : lockedByOther ? `🔒 ע"י ${g.inCollection}` : 'ממתין'}
           </span>
         </div>
         {g.phone && (

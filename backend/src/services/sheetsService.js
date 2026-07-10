@@ -817,6 +817,31 @@ async function repairGuitarIds(dryRun = false) {
   return { repaired: repairs.length, collectionPatches: '(dry-run)', details: repairs };
 }
 
+// ── Verified address IDs — stored in cell Z1 of the main sheet ───────────────
+async function loadAddressVerifiedIds() {
+  if (!process.env.GOOGLE_SHEET_ID) return [];
+  const sheets = getSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!Z1`,
+  });
+  try {
+    const val = res.data.values?.[0]?.[0];
+    return val ? JSON.parse(val) : [];
+  } catch { return []; }
+}
+
+async function saveAddressVerifiedIds(ids) {
+  if (!process.env.GOOGLE_SHEET_ID) return;
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${SHEET_TAB}!Z1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[JSON.stringify(ids)]] },
+  });
+}
+
 // ── Skipped address IDs — stored in cell X1 of the main sheet ────────────────
 async function loadSkippedAddressIds() {
   if (!process.env.GOOGLE_SHEET_ID) return [];
@@ -890,6 +915,9 @@ module.exports = {
   getActionLog,
   // One-time repair
   repairGuitarIds,
+  // Verified addresses
+  loadAddressVerifiedIds,
+  saveAddressVerifiedIds,
   // Skipped addresses
   loadSkippedAddressIds,
   saveSkippedAddressIds,

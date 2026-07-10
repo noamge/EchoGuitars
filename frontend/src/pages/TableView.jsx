@@ -28,7 +28,7 @@ const CUTOFF = new Date(2026, 6, 1);
 function parseSubDate(str) {
   if (!str) return null;
   const [datePart] = str.split(' ');
-  const parts = datePart.split('\\');
+  const parts = datePart.split('/');
   if (parts.length < 3) return null;
   return new Date(+parts[2], +parts[1] - 1, +parts[0]);
 }
@@ -139,7 +139,13 @@ export default function TableView() {
           if (av > bv) return sortDir === 'asc' ? 1 : -1;
           return 0;
         }
-      : (a, b) => b.id - a.id; // default: newest (highest ID) first
+      : (a, b) => {
+        const da = parseSubDate(a.submissionTime), db = parseSubDate(b.submissionTime);
+        if (da && db) return db - da;
+        if (da) return -1;
+        if (db) return 1;
+        return b.id - a.id;
+      };
 
     newOnes = [...newOnes].sort(sf);
     rest    = [...rest].sort(sf);
