@@ -23,10 +23,14 @@ const THANK_CUTOFF = new Date(2026, 6, 1); // July 1, 2026
 
 function parseSubmissionDate(str) {
   if (!str) return null;
-  const [datePart] = str.split(' ');
-  const parts = datePart.split('/');
-  if (parts.length < 3) return null;
-  return new Date(+parts[2], +parts[1] - 1, +parts[0]);
+  // DD/MM/YYYY or DD.MM.YYYY (Israeli/admin format)
+  let m = str.match(/^(\d{1,2})[\/\.](\d{1,2})[\/\.](\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  // YYYY-MM-DD (ISO / Wix format)
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 async function fetchGuitars() {
