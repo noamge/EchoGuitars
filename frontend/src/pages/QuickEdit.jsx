@@ -354,17 +354,23 @@ export default function QuickEdit() {
       try {
         const isCollect = activeAction === 'collect';
         const isDonate  = activeAction === 'donate';
+        const savedOrg  = orgName.trim();
         const newGuitar = await addGuitar({
           name: newDonorName.trim(), phone: newDonorPhone.trim(),
           city: newDonorCity.trim(), guitarType: newDonorGuitarType,
           collected: isCollect || isDonate,
           notes: isCollect ? buildCollectNotes() : '',
         });
-        if (isDonate)                    await updateGuitar(newGuitar.id, { donatedTo: orgName.trim() });
+        if (isDonate)                    await updateGuitar(newGuitar.id, { donatedTo: savedOrg });
         if (activeAction === 'repair_send') await updateGuitar(newGuitar.id, { whoRepairs: whoRepairs.trim() });
         if (activeAction === 'repaired')    await updateGuitar(newGuitar.id, { repaired: true });
         toast.success('תורם חדש נוסף בהצלחה!');
-        setActiveAction(null);
+        if (isDonate) {
+          setActionResults([{ guitar: { ...newGuitar, phone: newDonorPhone.trim() }, ok: true, wasDonate: true, donateOrg: savedOrg }]);
+          setNewDonorMode(false);
+        } else {
+          setActiveAction(null);
+        }
       } catch (err) { toast.error('שגיאה: ' + err.message); }
       setSubmitting(false); return;
     }
@@ -388,7 +394,7 @@ export default function QuickEdit() {
         if (activeAction === 'repaired')    updates = { repaired: true };
         if (activeAction === 'donate')      updates = { donatedTo: orgName.trim(), collected: true };
         await updateGuitar(g.id, updates);
-        results.push({ guitar: g, ok: true });
+        results.push({ guitar: g, ok: true, wasDonate: activeAction === 'donate', donateOrg: orgName.trim() });
       } catch (err) {
         results.push({ guitar: g, ok: false, err: err.message });
       }
@@ -398,7 +404,7 @@ export default function QuickEdit() {
     if (results.every(r => r.ok)) {
       toast.success(`${results.length} גיטרות עודכנו בהצלחה!`);
       warnings.forEach(w => toast(w, { icon: '⚠️', duration: 7000 }));
-      setActiveAction(null);
+      if (activeAction !== 'donate') setActiveAction(null);
     }
     setSubmitting(false);
   };
@@ -554,10 +560,10 @@ export default function QuickEdit() {
           {/* Results */}
           {actionResults.length > 0 && (
             <div className={styles.actionResults}>
-              {actionResults.map(({ guitar, ok, err }) => {
-                const isDonate = activeAction === 'donate' && ok;
+              {actionResults.map(({ guitar, ok, err, wasDonate, donateOrg }) => {
+                const isDonate = wasDonate && ok;
                 const waPhone = guitar.phone ? toWhatsApp(guitar.phone) : null;
-                const donateMsg = encodeURIComponent(`היי! מעדכן שהגיטרה שתרמת למיזם - נתרמה ל${orgName}`);
+                const donateMsg = encodeURIComponent(`היי! מעדכן שהגיטרה שתרמת למיזם - נתרמה ל${donateOrg || ''}`);
                 return (
                   <div key={guitar.id} className={`${styles.actionResult} ${ok ? styles.actionResultOk : styles.actionResultErr}`}>
                     {ok ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
@@ -580,6 +586,11 @@ export default function QuickEdit() {
                   </div>
                 );
               })}
+              {actionResults.every(r => r.wasDonate && r.ok) && (
+                <button type="button" className={styles.cancelLink} style={{ marginTop: 8 }} onClick={() => setActiveAction(null)}>
+                  ✕ סיים
+                </button>
+              )}
             </div>
           )}
 
