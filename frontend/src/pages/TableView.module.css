@@ -288,3 +288,62 @@
   color: #9ca3af;
   font-style: italic;
 }
+
+.expandableCell {
+  cursor: pointer;
+}
+.expandableCell:hover {
+  background: #fef9c3 !important;
+}
+
+.cellPopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cellPopup {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  max-width: min(90vw, 420px);
+  width: 100%;
+  overflow: hidden;
+}
+
+.cellPopupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--primary-dark);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cellPopupHeader button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cellPopupBody {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 60vh;
+  overflow-y: auto;
+  direction: rtl;
+  text-align: right;
+}

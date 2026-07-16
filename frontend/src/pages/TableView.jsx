@@ -23,7 +23,7 @@ https://www.instagram.com/echo_guitars25/
 
 https://www.facebook.com/profile.php?id=61583010691069`);
 
-const CUTOFF = new Date(2026, 6, 1);
+const CUTOFF = new Date(2026, 6, 16);
 
 function parseSubDate(str) {
   if (!str) return null;
@@ -48,9 +48,9 @@ function WaIcon() {
 
 const COLUMNS = [
   { key: 'id',         label: '#',          width: 44 },
-  { key: 'name',       label: 'שם',         width: 130 },
-  { key: 'city',       label: 'עיר',        width: 90 },
-  { key: 'street',     label: 'רחוב',       width: 110 },
+  { key: 'name',       label: 'שם',         width: 150 },
+  { key: 'city',       label: 'עיר',        width: 110 },
+  { key: 'street',     label: 'רחוב',       width: 140 },
   { key: 'phone',      label: 'טלפון',      width: 145, render: v => v ? (
     <span style={{ display:'flex', gap:6, alignItems:'center' }}>
       <a href={`tel:${v}`} style={{ color:'var(--primary)', textDecoration:'none', fontWeight:500 }}>{v}</a>
@@ -64,8 +64,8 @@ const COLUMNS = [
   { key: 'working',    label: 'תקינות',     width: 80 },
   { key: 'hasCase',    label: 'קייס',       width: 55 },
   { key: 'collected',  label: 'נאסף',       width: 55,  render: v => v ? '✓' : '—' },
-  { key: 'donatedTo',  label: 'נתרם ל',     width: 110 },
-  { key: 'notes',      label: 'הערות',      width: 140 },
+  { key: 'donatedTo',  label: 'נתרם ל',     width: 130, expandable: true },
+  { key: 'notes',      label: 'הערות',      width: 140, expandable: true },
   { key: 'region',     label: 'אזור',       width: 70 },
   { key: 'imageUrl',   label: 'תמונה',      width: 65,  render: v => v
       ? <a href={v} target="_blank" rel="noopener noreferrer" style={{color:'#2563eb'}}>📷</a>
@@ -94,6 +94,7 @@ export default function TableView() {
   const [whoRepairsValue, setWhoRepairsValue]     = useState('');
   const [thankedIds, setThankedIds] = useState(new Set());
   const [thanking, setThanking]     = useState(null);
+  const [expandedCell, setExpandedCell] = useState(null);
 
   const filterField = searchParams.get('field');
   const filterValue = searchParams.get('value');
@@ -289,11 +290,21 @@ export default function TableView() {
                 const isNewGuitar = (() => { const d = parseSubDate(g.submissionTime); return !!(d && d >= CUTOFF && !thankedIds.has(g.id)); })();
                 return (
                   <tr key={g.id} className={[g.collected ? styles.collected : '', isNewGuitar ? styles.newRow : ''].filter(Boolean).join(' ')}>
-                    {COLUMNS.map(col => (
-                      <td key={col.key} style={{ maxWidth: col.width }}>
-                        {col.render ? col.render(g[col.key]) : (g[col.key] ?? '—')}
-                      </td>
-                    ))}
+                    {COLUMNS.map(col => {
+                      const rawVal = g[col.key];
+                      const textVal = typeof rawVal === 'string' ? rawVal : '';
+                      return (
+                        <td
+                          key={col.key}
+                          style={{ maxWidth: col.width }}
+                          title={col.expandable && textVal ? textVal : undefined}
+                          onClick={col.expandable && textVal ? () => setExpandedCell({ text: textVal, label: col.label }) : undefined}
+                          className={col.expandable && textVal ? styles.expandableCell : undefined}
+                        >
+                          {col.render ? col.render(rawVal) : (rawVal ?? '—')}
+                        </td>
+                      );
+                    })}
 
                     {/* תוקן — toggle button */}
                     <td style={{ textAlign: 'center' }}>
@@ -326,7 +337,7 @@ export default function TableView() {
                         <span
                           className={styles.whoRepairsDisplay}
                           onClick={() => startEditWhoRepairs(g)}
-                          title="לחץ לעריכה"
+                          title={g.whoRepairs || 'לחץ לעריכה'}
                         >
                           {g.whoRepairs || <span style={{ color: '#9ca3af' }}>לחץ לעריכה</span>}
                         </span>
@@ -388,6 +399,18 @@ export default function TableView() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {expandedCell && (
+        <div className={styles.cellPopupOverlay} onClick={() => setExpandedCell(null)}>
+          <div className={styles.cellPopup} onClick={e => e.stopPropagation()} dir="rtl">
+            <div className={styles.cellPopupHeader}>
+              <span>{expandedCell.label}</span>
+              <button onClick={() => setExpandedCell(null)}>✕</button>
+            </div>
+            <div className={styles.cellPopupBody}>{expandedCell.text}</div>
+          </div>
         </div>
       )}
     </div>

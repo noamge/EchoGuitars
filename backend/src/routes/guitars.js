@@ -19,7 +19,7 @@ loadAddressVerifiedIds().then(ids => ids.forEach(id => addressVerifiedIds.add(id
 const thankedIds = new Set();
 loadThankedIds().then(ids => ids.forEach(id => thankedIds.add(id))).catch(() => {});
 
-const THANK_CUTOFF = new Date(2026, 6, 1); // July 1, 2026
+const THANK_CUTOFF = new Date(2026, 6, 16); // July 16, 2026
 
 function parseSubmissionDate(str) {
   if (!str) return null;

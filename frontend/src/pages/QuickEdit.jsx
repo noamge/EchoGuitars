@@ -383,6 +383,10 @@ export default function QuickEdit() {
     const warnings = [];
 
     for (const g of selectedGuitars) {
+      if (activeAction === 'donate' && g.donatedTo) {
+        results.push({ guitar: g, ok: false, err: `כבר נתרמה בעבר ל${g.donatedTo}, ייתכן שטעית` });
+        continue;
+      }
       if (activeAction === 'repaired') {
         if (g.repaired)    warnings.push(`${g.name} — כבר סומנה כתוקנה בעבר`);
         if (!g.whoRepairs) warnings.push(`${g.name} — לא מצוין מי תיקן`);
