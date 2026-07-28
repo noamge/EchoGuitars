@@ -241,10 +241,22 @@
 
 @media (max-width: 700px) {
   .page { padding: 16px; }
-  .logHeader, .logRow {
-    grid-template-columns: 90px 80px 1fr;
+  /* Column labels don't apply once rows switch to a stacked card layout below */
+  .logHeader { display: none; }
+  .logRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "actor time"
+      "action action"
+      "guitar guitar";
+    row-gap: 3px;
   }
-  .logGuitar, .logDetails { display: none; }
+  .logTime { grid-area: time; text-align: left; }
+  .logActor { grid-area: actor; }
+  .logAction { grid-area: action; }
+  .logGuitar { grid-area: guitar; font-size: 12px; }
+  .logDetails { display: none; }
   .collectionHeader { flex-direction: column; }
 }
 
