@@ -162,6 +162,17 @@
 .viewModeBtn:hover { border-color: var(--primary-light); color: var(--primary); }
 .viewModeBtnActive { background: var(--primary); color: #fff; border-color: var(--primary); }
 
+/* Keep the 4 admin header controls (count + 3 filters + view-mode) on one row even on narrow phones */
+@media (max-width: 480px) {
+  .mapHeader { gap: 6px; padding: 10px 12px; }
+  .adminCount { font-size: 11px; gap: 2px; }
+  .adminCountNum { font-size: 15px; }
+  .filters { gap: 4px; }
+  .filterBtn { padding: 5px 9px; font-size: 11px; }
+  .viewModeBtn { padding: 6px 8px; }
+  .viewModeBtnLabel { display: none; }
+}
+
 .volunteerLocationRow {
   display: flex;
   flex-direction: column;

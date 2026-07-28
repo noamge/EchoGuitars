@@ -515,6 +515,20 @@ export default function MapView({
     setUserLocation({ lat, lon });
   }, [guitars, myName]);
 
+  // Admin: auto-detect location on page load, without clicking "זהה מיקום עצמי" — silent on failure/denial
+  useEffect(() => {
+    if (isVolunteer || userLocation || guitars.length === 0 || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        calcNearby(pos.coords.latitude, pos.coords.longitude);
+        setResolvedAddress('מיקום GPS');
+      },
+      () => {},
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guitars, isVolunteer]);
+
   const detectLocation = () => {
     if (!navigator.geolocation) { alert('הדפדפן לא תומך ב-geolocation'); return; }
     setLocating(true);
@@ -612,7 +626,7 @@ export default function MapView({
               title={viewMode === 'cluster' ? 'עבור לתצוגת נקודות' : 'עבור לתצוגת קיבוץ'}
             >
               {viewMode === 'cluster' ? <Dot size={16} /> : <Layers size={16} />}
-              {viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}
+              <span className={styles.viewModeBtnLabel}>{viewMode === 'cluster' ? 'נקודות' : 'קיבוץ'}</span>
             </button>
           )}
         </div>
