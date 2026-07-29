@@ -111,10 +111,10 @@ export default function App() {
     }
   }, [collection]);
 
-  const handleMarkCollected = useCallback(async (guitarId) => {
+  const handleMarkCollected = useCallback(async (guitarId, photoUrl) => {
     if (!collection) return;
     try {
-      const updated = await markGuitarCollected(collection.id, guitarId);
+      const updated = await markGuitarCollected(collection.id, guitarId, photoUrl);
       setCollection(updated);
     } catch (err) {
       alert('שגיאה: ' + err.message);

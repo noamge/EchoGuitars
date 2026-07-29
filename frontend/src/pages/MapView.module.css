@@ -778,14 +778,58 @@
   font-weight: 600; cursor: pointer; font-family: inherit;
 }
 .modalNo:hover { background: #f9fafb; }
-.thankyouWaBtn {
-  display: flex; align-items: center; justify-content: center; gap: 9px;
-  background: #25d366; color: #fff; border-radius: 10px;
-  padding: 13px; font-size: 15px; font-weight: 700;
-  text-decoration: none; margin-bottom: 10px;
+.modalNo:disabled { opacity: 0.5; cursor: default; }
+.modalYes:disabled { opacity: 0.7; cursor: wait; }
+
+.modalPhotoBtn {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 11px 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1.5px dashed #93c5fd;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
   transition: background 0.15s;
 }
-.thankyouWaBtn:hover { background: #16a34a; }
+.modalPhotoBtn:hover { background: #dbeafe; }
+
+.modalPhotoPreviewWrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.modalPhotoPreview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+  border-radius: 10px;
+}
+.modalPhotoRemove {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modalPhotoRemove:hover { background: rgba(0,0,0,0.8); }
+
 .modalClose {
   background: none; color: #9ca3af; border: none;
   font-size: 13px; cursor: pointer; font-family: inherit;

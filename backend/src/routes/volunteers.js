@@ -176,17 +176,18 @@ router.patch('/collection/:id/send', async (req, res) => {
 router.patch('/collection/:id/mark-collected', async (req, res) => {
   try {
     if (useMock()) return res.json({ ok: true });
-    const { guitarId } = req.body;
+    const { guitarId, photoUrl } = req.body;
     const collection = await getCollection(req.params.id);
     if (!collection) return res.status(404).json({ error: 'Not found' });
 
     const updated = collection.guitars.map(g =>
-      g.id === Number(guitarId) ? { ...g, status: 'pending' } : g
+      g.id === Number(guitarId) ? { ...g, status: 'pending', photoUrl: photoUrl || g.photoUrl || '' } : g
     );
     const result = await updateCollectionRow(req.params.id, { guitars: updated });
     const guitar = collection.guitars.find(g => g.id === Number(guitarId));
     if (guitar) {
       try { await logAction(collection.volunteerName, 'guitar_marked_collected', guitarId, guitar.name, 'סומנה כנאספת — ממתינה לאישור מנהל'); } catch {}
+      if (photoUrl) { try { await updateGuitarByRowIndex(guitarId, { imageUrl: photoUrl }); } catch {} }
       sendCollectionEmail({
         volunteerName: collection.volunteerName,
         volunteerAddress: collection.volunteerAddress,

@@ -39,6 +39,11 @@ function GuitarChip({ g, collectionId, onApprove, onReject, approving }) {
   const isPending = g.status === 'pending';
   return (
     <div className={styles.guitarChip}>
+      {g.photoUrl && (
+        <a href={g.photoUrl} target="_blank" rel="noopener noreferrer" className={styles.guitarChipThumbLink}>
+          <img src={g.photoUrl} alt="" className={styles.guitarChipThumb} />
+        </a>
+      )}
       <div className={styles.guitarChipInfo}>
         <span className={styles.guitarChipName}>{g.name}</span>
         <span className={styles.guitarChipCity}>{g.city}{g.street ? `, ${g.street}` : ''}</span>

@@ -141,6 +141,14 @@
   gap: 2px;
   min-width: 0;
 }
+.guitarChipThumbLink { flex-shrink: 0; display: block; }
+.guitarChipThumb {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
 .guitarChipName { font-weight: 700; font-size: 14px; }
 .guitarChipCity { font-size: 12px; color: var(--text-muted); }
 .guitarChipPhone { font-size: 12px; color: var(--primary); }

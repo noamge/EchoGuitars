@@ -109,8 +109,8 @@ export const removeGuitarFromCollection = (collectionId, guitarId) =>
 export const sendCollectionToAdmin = (collectionId) =>
   api.patch(`/volunteers/collection/${collectionId}/send`).then(r => r.data);
 
-export const markGuitarCollected = (collectionId, guitarId) =>
-  api.patch(`/volunteers/collection/${collectionId}/mark-collected`, { guitarId }).then(r => r.data);
+export const markGuitarCollected = (collectionId, guitarId, photoUrl) =>
+  api.patch(`/volunteers/collection/${collectionId}/mark-collected`, { guitarId, photoUrl }).then(r => r.data);
 
 export const unmarkGuitarCollected = (collectionId, guitarId) =>
   api.patch(`/volunteers/collection/${collectionId}/unmark-collected`, { guitarId }).then(r => r.data);

@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap, useMapEve
 import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { getGuitarsForMap, updateGuitar } from '../api/client';
+import { getGuitarsForMap, updateGuitar, uploadImage } from '../api/client';
 import { MapPin, Navigation, Search, Maximize2, Minimize2, Layers, Dot, X, CheckCircle } from 'lucide-react';
 import CollectionBubble from '../components/CollectionBubble';
 import styles from './MapView.module.css';
@@ -351,6 +351,10 @@ export default function MapView({
   const [confirmModal, setConfirmModal]   = useState(null); // { id, name, city, phone }
   const [thankyouModal, setThankyouModal] = useState(null); // { name, city }
   const [wazeHint, setWazeHint]           = useState(false);
+  const [photoFile, setPhotoFile]         = useState(null);
+  const [photoPreview, setPhotoPreview]   = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
 
   useEffect(() => {
     if (!isVolunteer) return;
@@ -468,11 +472,36 @@ export default function MapView({
     }, 320);
   }, [onRemoveFromCollection]);
 
-  // Build WhatsApp URL for "I collected this guitar"
-  const buildCollectedWaUrl = (guitar) => {
-    const msg = `היי, אספתי את הגיטרה של ${guitar.name}${guitar.city ? ` מ${guitar.city}` : ''} 🎸✓`;
-    return `https://wa.me/${WA_ADMIN}?text=${encodeURIComponent(msg)}`;
-  };
+  const closeConfirmModal = useCallback(() => {
+    setConfirmModal(null);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  }, []);
+
+  const handlePhotoSelect = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  }, []);
+
+  const handleConfirmCollected = useCallback(async () => {
+    if (!confirmModal) return;
+    setUploadingPhoto(true);
+    let photoUrl = null;
+    if (photoFile) {
+      try {
+        const res = await uploadImage(photoFile);
+        photoUrl = res.url;
+      } catch {
+        alert('העלאת התמונה נכשלה — האיסוף יסומן בכל זאת');
+      }
+    }
+    onMarkCollected?.(confirmModal.id, photoUrl);
+    setThankyouModal({ name: confirmModal.name, city: confirmModal.city, phone: confirmModal.phone });
+    setUploadingPhoto(false);
+    closeConfirmModal();
+  }, [confirmModal, photoFile, onMarkCollected, closeConfirmModal]);
 
   // Called when volunteer clicks "המשך"
   const handleSaveCollection = useCallback(async () => {
@@ -1014,7 +1043,7 @@ export default function MapView({
 
       {/* ── Confirmation modal (centered) ── */}
       {confirmModal && (
-        <div className={styles.modalOverlay} onClick={() => setConfirmModal(null)}>
+        <div className={styles.modalOverlay} onClick={closeConfirmModal}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalIcon}>🎸</div>
             <h3 className={styles.modalTitle}>אספת את הגיטרה?</h3>
@@ -1022,18 +1051,39 @@ export default function MapView({
               {confirmModal.name}
               {confirmModal.city ? ` — ${confirmModal.city}` : ''}
             </p>
+
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={handlePhotoSelect}
+            />
+            {photoPreview ? (
+              <div className={styles.modalPhotoPreviewWrap}>
+                <img src={photoPreview} alt="" className={styles.modalPhotoPreview} />
+                <button
+                  className={styles.modalPhotoRemove}
+                  onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                  title="הסר תמונה"
+                >✕</button>
+              </div>
+            ) : (
+              <button className={styles.modalPhotoBtn} onClick={() => photoInputRef.current?.click()}>
+                📷 הוסף תמונה של הגיטרה (לא חובה — עוזר לזהות אותה אצלנו)
+              </button>
+            )}
+
             <div className={styles.modalBtns}>
               <button
                 className={styles.modalYes}
-                onClick={() => {
-                  onMarkCollected?.(confirmModal.id);
-                  setThankyouModal({ name: confirmModal.name, city: confirmModal.city, phone: confirmModal.phone });
-                  setConfirmModal(null);
-                }}
+                onClick={handleConfirmCollected}
+                disabled={uploadingPhoto}
               >
-                ✓ כן, אספתי!
+                {uploadingPhoto ? 'מעלה תמונה...' : '✓ כן, אספתי!'}
               </button>
-              <button className={styles.modalNo} onClick={() => setConfirmModal(null)}>
+              <button className={styles.modalNo} onClick={closeConfirmModal} disabled={uploadingPhoto}>
                 ✕ לא עדיין
               </button>
             </div>
@@ -1048,20 +1098,8 @@ export default function MapView({
             <div className={styles.modalIcon}>🙏</div>
             <h3 className={styles.modalTitle}>תודה רבה על איסוף הגיטרה!</h3>
             <p className={styles.modalBody}>
-              עדכן את מנהל המיזם שאספת את הגיטרה של <strong>{thankyouModal.name}</strong>
+              אספת את הגיטרה של <strong>{thankyouModal.name}</strong> — מנהל המיזם קיבל עדכון אוטומטי במייל.
             </p>
-            <a
-              href={buildCollectedWaUrl(thankyouModal)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.thankyouWaBtn}
-              onClick={() => setThankyouModal(null)}
-            >
-              <svg width="18" height="18" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 3C8.82 3 3 8.82 3 16c0 2.35.64 4.55 1.76 6.44L3 29l6.74-1.76A13 13 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.45 17.6c-.27.76-1.57 1.46-2.16 1.55-.55.08-1.24.12-2-.13-.46-.14-1.05-.34-1.8-.67-3.16-1.36-5.22-4.54-5.38-4.75-.16-.21-1.3-1.73-1.3-3.3 0-1.57.82-2.34 1.12-2.66.27-.3.6-.37.8-.37.2 0 .4 0 .57.01.18.01.44-.07.68.52.27.63.9 2.2.98 2.36.08.16.13.35.03.56-.1.21-.15.34-.3.52-.16.19-.33.42-.47.56-.16.16-.32.33-.14.65.18.32.82 1.35 1.76 2.19 1.21 1.08 2.23 1.41 2.55 1.57.32.16.5.13.68-.08.19-.21.8-.93 1.01-1.25.21-.32.42-.27.7-.16.29.11 1.84.87 2.16 1.03.32.16.53.24.61.37.08.13.08.76-.19 1.52z"/>
-              </svg>
-              עדכן את נועם בוואטסאפ
-            </a>
             <button className={styles.modalClose} onClick={() => setThankyouModal(null)}>סגור</button>
           </div>
         </div>
