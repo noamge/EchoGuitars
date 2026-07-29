@@ -707,7 +707,11 @@ export default function MapView({
           {loading && (
             <div className={styles.mapSkeleton}>
               <div className={styles.skeletonShimmer} />
-              <MapPin size={36} className={styles.mapSkeletonIcon} />
+              <div className={styles.mapSkeletonContent}>
+                <div className={styles.mapSkeletonSpinner} />
+                <p className={styles.mapSkeletonText}>טוען את המפה והגיטרות…</p>
+                <p className={styles.mapSkeletonSubtext}>בפתיחה ראשונה זה עשוי לקחת כמה שניות</p>
+              </div>
             </div>
           )}
           {error   && <div className={styles.loading} style={{color:'red'}}>שגיאה: {error}</div>}
