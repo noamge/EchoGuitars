@@ -80,8 +80,6 @@
   background: var(--bg-card);
   box-shadow: var(--shadow);
 }
-.collectionCardHistory { opacity: 0.85; }
-
 .collectionHeader {
   display: flex;
   align-items: flex-start;
@@ -117,7 +115,6 @@
   border-radius: 6px;
   padding: 2px 8px;
 }
-.statusLabel { font-size: 12px; font-weight: 700; }
 .dateLabel { font-size: 11px; color: var(--text-muted); }
 
 /* ── Guitar list ── */

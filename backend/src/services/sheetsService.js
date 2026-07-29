@@ -35,14 +35,15 @@ const COL = {
 
 // Collections sheet column indices (0-based)
 const COL_COLL = {
-  ID:                0,  // A
-  VOLUNTEER_NAME:    1,  // B
-  VOLUNTEER_ADDRESS: 2,  // C
-  GUITARS_JSON:      3,  // D — JSON array of {id, name, city, street, phone, status}
-  STATUS:            4,  // E — active | sent | closed
-  SENT_TO_ADMIN:     5,  // F — TRUE/FALSE
-  CREATED_AT:        6,  // G
-  UPDATED_AT:        7,  // H
+  ID:                     0,  // A
+  VOLUNTEER_NAME:         1,  // B
+  VOLUNTEER_ADDRESS:      2,  // C
+  GUITARS_JSON:           3,  // D — JSON array of {id, name, city, street, phone, status}
+  STATUS:                 4,  // E — active | sent | closed
+  SENT_TO_ADMIN:          5,  // F — TRUE/FALSE
+  CREATED_AT:             6,  // G
+  UPDATED_AT:             7,  // H
+  VOLUNTEER_ACTIVITY_AT:  8,  // I — bumped only by volunteer-initiated actions, not admin approvals
 };
 
 // ActionLog sheet column indices (0-based)
@@ -227,7 +228,7 @@ async function ensureSheets() {
   if (!existing.has(COLLECTIONS_TAB)) {
     toCreate.push({
       name: COLLECTIONS_TAB,
-      headers: ['ID', 'volunteer_name', 'volunteer_address', 'guitars_json', 'status', 'sent_to_admin', 'created_at', 'updated_at'],
+      headers: ['ID', 'volunteer_name', 'volunteer_address', 'guitars_json', 'status', 'sent_to_admin', 'created_at', 'updated_at', 'volunteer_activity_at'],
     });
   }
   if (!existing.has(ACTION_LOG_TAB)) {
@@ -599,6 +600,8 @@ function rowToCollection(row) {
     sentToAdmin:      row[COL_COLL.SENT_TO_ADMIN] === 'TRUE',
     createdAt:        row[COL_COLL.CREATED_AT]    || '',
     updatedAt:        row[COL_COLL.UPDATED_AT]    || '',
+    // Older rows predate this column — fall back to updatedAt/createdAt so they still sort sensibly.
+    volunteerActivityAt: row[COL_COLL.VOLUNTEER_ACTIVITY_AT] || row[COL_COLL.UPDATED_AT] || row[COL_COLL.CREATED_AT] || '',
   };
 }
 
@@ -607,7 +610,7 @@ async function getCollectionRows() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${COLLECTIONS_TAB}!A2:H`,
+    range: `${COLLECTIONS_TAB}!A2:I`,
   });
   return { sheets, rows: res.data.values || [] };
 }
@@ -637,15 +640,16 @@ async function createCollection(volunteerName, volunteerAddress, guitars) {
     'FALSE',
     ts,
     ts,
+    ts,
   ];
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${COLLECTIONS_TAB}!A:H`,
+    range: `${COLLECTIONS_TAB}!A:I`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] },
   });
-  return { id, volunteerName, volunteerAddress, guitars, status: 'active', sentToAdmin: false, createdAt: ts, updatedAt: ts };
+  return { id, volunteerName, volunteerAddress, guitars, status: 'active', sentToAdmin: false, createdAt: ts, updatedAt: ts, volunteerActivityAt: ts };
 }
 
 async function updateCollectionRow(id, fields) {
@@ -653,23 +657,26 @@ async function updateCollectionRow(id, fields) {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${COLLECTIONS_TAB}!A2:H`,
+    range: `${COLLECTIONS_TAB}!A2:I`,
   });
   const rows = res.data.values || [];
   const idx = rows.findIndex(r => r[COL_COLL.ID] === id);
   if (idx === -1) throw new Error(`Collection ${id} not found`);
   const rowIndex = idx + 2;
   const row = [...rows[idx]];
-  while (row.length < 8) row.push('');
+  while (row.length < 9) row.push('');
 
   if (fields.guitars    !== undefined) row[COL_COLL.GUITARS_JSON]      = JSON.stringify(fields.guitars);
   if (fields.status     !== undefined) row[COL_COLL.STATUS]            = fields.status;
   if (fields.sentToAdmin !== undefined) row[COL_COLL.SENT_TO_ADMIN]   = fields.sentToAdmin ? 'TRUE' : 'FALSE';
-  row[COL_COLL.UPDATED_AT] = now();
+  const ts = now();
+  row[COL_COLL.UPDATED_AT] = ts;
+  // Only volunteer-initiated actions bump this, so admin approvals don't reorder the list mid-review.
+  if (fields.touchVolunteerActivity) row[COL_COLL.VOLUNTEER_ACTIVITY_AT] = ts;
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${COLLECTIONS_TAB}!A${rowIndex}:H${rowIndex}`,
+    range: `${COLLECTIONS_TAB}!A${rowIndex}:I${rowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });

@@ -8,17 +8,12 @@ import {
 } from '../api/client';
 import styles from './Volunteers.module.css';
 
-const STATUS_LABELS = {
-  active:  { text: 'פעיל',         color: '#2563eb' },
-  sent:    { text: 'נשלח למנהל',   color: '#d97706' },
-  closed:  { text: 'סגור',         color: '#6b7280' },
-};
-
 const GUITAR_STATUS_LABELS = {
-  selected: { text: 'נבחרה',              bg: '#dbeafe', color: '#1d4ed8' },
-  pending:  { text: 'ממתין לאישור',       bg: '#fef3c7', color: '#92400e' },
-  approved: { text: 'אושר ✓',            bg: '#dcfce7', color: '#15803d' },
-  rejected: { text: 'נדחה',              bg: '#fee2e2', color: '#dc2626' },
+  selected:         { text: 'מתוכנן לאיסוף',      bg: '#dbeafe', color: '#1d4ed8' },
+  pending:          { text: 'ממתין לאישור',       bg: '#fef3c7', color: '#92400e' },
+  approved:         { text: 'אושר ✓',            bg: '#dcfce7', color: '#15803d' },
+  admin_collected:  { text: 'עודכן ע"י מנהל ✓',   bg: '#dcfce7', color: '#15803d' },
+  rejected:         { text: 'נדחה',              bg: '#fee2e2', color: '#dc2626' },
 };
 
 const ACTION_LABELS = {
@@ -34,9 +29,11 @@ const ACTION_LABELS = {
   guitar_deleted:            '🗑 נמחק',
 };
 
-function GuitarChip({ g, collectionId, onApprove, onReject, approving }) {
+function GuitarChip({ g, collectionId, onApprove, onReject, onAdminMarkCollected, approving, adminMarking }) {
   const sl = GUITAR_STATUS_LABELS[g.status] || { text: g.status, bg: '#f3f4f6', color: '#374151' };
-  const isPending = g.status === 'pending';
+  const isPending  = g.status === 'pending';
+  const isSelected = g.status === 'selected';
+  const key = `${collectionId}-${g.id}`;
   return (
     <div className={styles.guitarChip}>
       {g.photoUrl && (
@@ -56,18 +53,28 @@ function GuitarChip({ g, collectionId, onApprove, onReject, approving }) {
             <button
               className={styles.approveBtn}
               onClick={() => onApprove(collectionId, g.id)}
-              disabled={approving === `${collectionId}-${g.id}`}
+              disabled={approving === key}
             >
-              {approving === `${collectionId}-${g.id}` ? '...' : '✓ אשר'}
+              {approving === key ? '...' : '✓ אשר'}
             </button>
             <button
               className={styles.rejectBtn}
               onClick={() => onReject(collectionId, g.id)}
-              disabled={approving === `${collectionId}-${g.id}`}
+              disabled={approving === key}
             >
               ✕ דחה
             </button>
           </div>
+        )}
+        {isSelected && (
+          <button
+            className={styles.adminCollectedBtn}
+            onClick={() => onAdminMarkCollected(collectionId, g.id)}
+            disabled={adminMarking === key}
+            title="סמן שהגיטרה כבר נאספה"
+          >
+            {adminMarking === key ? '...' : '✓ נאסף כבר'}
+          </button>
         )}
       </div>
     </div>
@@ -79,7 +86,7 @@ export default function Volunteers() {
   const [log, setLog]                 = useState([]);
   const [loadingC, setLoadingC]       = useState(true);
   const [loadingL, setLoadingL]       = useState(true);
-  const [tab, setTab]                 = useState('active'); // active | pending | history | log
+  const [tab, setTab]                 = useState('active'); // active | log
   const [approving, setApproving]     = useState(null); // `${collectionId}-${guitarId}`
   const [adminMarking, setAdminMarking] = useState(null); // `${collectionId}-${guitarId}`
 
@@ -128,18 +135,16 @@ export default function Volunteers() {
     }
   };
 
-  // Split collections
-  const activeCollections  = collections.filter(c =>
-    c.status !== 'closed' && c.guitars.some(g => g.status === 'selected')
-  );
-  const pendingCollections = collections.filter(c =>
-    c.guitars.some(g => g.status === 'pending')
-  );
-  const historyCollections = collections.filter(c =>
-    c.status === 'closed' || (!c.guitars.some(g => g.status === 'selected') && !c.guitars.some(g => g.status === 'pending'))
-  );
+  // One row per volunteer collection, newest volunteer-activity first.
+  // Approvals/rejections (admin actions) don't bump order — only the volunteer
+  // saving a new list or marking a guitar collected does.
+  const sortedCollections = [...collections].sort((a, b) => {
+    const ta = new Date(a.volunteerActivityAt || a.updatedAt || a.createdAt || 0).getTime();
+    const tb = new Date(b.volunteerActivityAt || b.updatedAt || b.createdAt || 0).getTime();
+    return tb - ta;
+  });
 
-  const pendingCount = pendingCollections.reduce(
+  const pendingCount = collections.reduce(
     (sum, c) => sum + c.guitars.filter(g => g.status === 'pending').length, 0
   );
 
@@ -157,21 +162,7 @@ export default function Volunteers() {
           onClick={() => setTab('active')}
         >
           רשימות איסוף
-          <span className={styles.tabBadgeGray}>{activeCollections.length}</span>
-        </button>
-        <button
-          className={`${styles.tab} ${tab === 'pending' ? styles.tabActive : ''}`}
-          onClick={() => setTab('pending')}
-        >
-          ממתין לאישור
           {pendingCount > 0 && <span className={styles.tabBadge}>{pendingCount}</span>}
-        </button>
-        <button
-          className={`${styles.tab} ${tab === 'history' ? styles.tabActive : ''}`}
-          onClick={() => setTab('history')}
-        >
-          היסטוריה
-          <span className={styles.tabBadgeGray}>{historyCollections.length}</span>
         </button>
         <button
           className={`${styles.tab} ${tab === 'log' ? styles.tabActive : ''}`}
@@ -182,14 +173,14 @@ export default function Volunteers() {
         </button>
       </div>
 
-      {/* ── Active collections (intent to collect) ── */}
+      {/* ── Collection lists (one per volunteer, newest activity first) ── */}
       {tab === 'active' && (
         <div className={styles.section}>
           {loadingC && <div className={styles.loading}>טוען...</div>}
-          {!loadingC && activeCollections.length === 0 && (
-            <div className={styles.empty}>אין רשימות איסוף פעילות כרגע</div>
+          {!loadingC && sortedCollections.length === 0 && (
+            <div className={styles.empty}>אין רשימות איסוף עדיין</div>
           )}
-          {activeCollections.map(c => (
+          {sortedCollections.map(c => (
             <div key={c.id} className={styles.collectionCard}>
               <div className={styles.collectionHeader}>
                 <div>
@@ -204,60 +195,6 @@ export default function Volunteers() {
                 </div>
               </div>
               <div className={styles.guitarList}>
-                {c.guitars.filter(g => g.status === 'selected' || g.status === 'admin_collected').map(g => (
-                  <div key={g.id} className={styles.guitarChip}>
-                    <div className={styles.guitarChipInfo}>
-                      <span className={styles.guitarChipName}>{g.name}</span>
-                      <span className={styles.guitarChipCity}>{g.city}{g.street ? `, ${g.street}` : ''}</span>
-                      {g.phone && <span className={styles.guitarChipPhone}>📞 {g.phone}</span>}
-                    </div>
-                    <div className={styles.guitarChipRight}>
-                      {g.status === 'admin_collected' ? (
-                        <span className={styles.guitarStatusBadge} style={{ background: '#dcfce7', color: '#15803d' }}>✓ נאסף</span>
-                      ) : (
-                        <>
-                          <span className={styles.guitarStatusBadge} style={{ background: '#dbeafe', color: '#1d4ed8' }}>מתוכנן לאיסוף</span>
-                          <button
-                            className={styles.adminCollectedBtn}
-                            onClick={() => handleAdminMarkCollected(c.id, g.id)}
-                            disabled={adminMarking === `${c.id}-${g.id}`}
-                            title="סמן שהגיטרה כבר נאספה"
-                          >
-                            {adminMarking === `${c.id}-${g.id}` ? '...' : '✓ נאסף כבר'}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Pending ── */}
-      {tab === 'pending' && (
-        <div className={styles.section}>
-          {loadingC && <div className={styles.loading}>טוען...</div>}
-          {!loadingC && pendingCollections.length === 0 && (
-            <div className={styles.empty}>✅ אין בקשות ממתינות לאישור</div>
-          )}
-          {pendingCollections.map(c => (
-            <div key={c.id} className={styles.collectionCard}>
-              <div className={styles.collectionHeader}>
-                <div>
-                  <span className={styles.volunteerName}>👤 {c.volunteerName}</span>
-                  {c.volunteerAddress && (
-                    <span className={styles.volunteerAddr}>📍 {c.volunteerAddress}</span>
-                  )}
-                </div>
-                <div className={styles.collectionMeta}>
-                  {c.sentToAdmin && <span className={styles.sentBadge}>📤 נשלח למנהל</span>}
-                  <span className={styles.dateLabel}>{new Date(c.updatedAt).toLocaleString('he-IL')}</span>
-                </div>
-              </div>
-              <div className={styles.guitarList}>
                 {c.guitars.map(g => (
                   <GuitarChip
                     key={g.id}
@@ -265,47 +202,9 @@ export default function Volunteers() {
                     collectionId={c.id}
                     onApprove={handleApprove}
                     onReject={handleReject}
+                    onAdminMarkCollected={handleAdminMarkCollected}
                     approving={approving}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── History ── */}
-      {tab === 'history' && (
-        <div className={styles.section}>
-          {loadingC && <div className={styles.loading}>טוען...</div>}
-          {!loadingC && historyCollections.length === 0 && (
-            <div className={styles.empty}>אין היסטוריה עדיין</div>
-          )}
-          {historyCollections.map(c => (
-            <div key={c.id} className={`${styles.collectionCard} ${styles.collectionCardHistory}`}>
-              <div className={styles.collectionHeader}>
-                <div>
-                  <span className={styles.volunteerName}>👤 {c.volunteerName}</span>
-                  {c.volunteerAddress && (
-                    <span className={styles.volunteerAddr}>📍 {c.volunteerAddress}</span>
-                  )}
-                </div>
-                <div className={styles.collectionMeta}>
-                  <span className={styles.statusLabel} style={{ color: STATUS_LABELS[c.status]?.color }}>
-                    {STATUS_LABELS[c.status]?.text || c.status}
-                  </span>
-                  <span className={styles.dateLabel}>{new Date(c.createdAt).toLocaleString('he-IL')}</span>
-                </div>
-              </div>
-              <div className={styles.guitarList}>
-                {c.guitars.map(g => (
-                  <GuitarChip
-                    key={g.id}
-                    g={g}
-                    collectionId={c.id}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    approving={approving}
+                    adminMarking={adminMarking}
                   />
                 ))}
               </div>

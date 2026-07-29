@@ -93,7 +93,7 @@ router.post('/collection', async (req, res) => {
       const existingIds = new Set(collection.guitars.map(g => g.id));
       const toAdd = newGuitars.filter(g => !existingIds.has(g.id));
       const merged = [...collection.guitars, ...toAdd];
-      collection = await updateCollectionRow(collectionId, { guitars: merged });
+      collection = await updateCollectionRow(collectionId, { guitars: merged, touchVolunteerActivity: true });
 
       // Lock only newly added guitars
       for (const g of toAdd) {
@@ -136,7 +136,7 @@ router.delete('/collection/:id/guitar/:guitarId', async (req, res) => {
     const guitarId = Number(req.params.guitarId);
     const removed = collection.guitars.find(g => g.id === guitarId);
     const remaining = collection.guitars.filter(g => g.id !== guitarId);
-    await updateCollectionRow(req.params.id, { guitars: remaining });
+    await updateCollectionRow(req.params.id, { guitars: remaining, touchVolunteerActivity: true });
 
     // Unlock the guitar so it returns to map
     try { await unlockGuitar(guitarId); } catch {}
@@ -163,7 +163,7 @@ router.patch('/collection/:id/send', async (req, res) => {
     if (useMock()) return res.json({ ok: true });
     const collection = await getCollection(req.params.id);
     if (!collection) return res.status(404).json({ error: 'Not found' });
-    const updated = await updateCollectionRow(req.params.id, { sentToAdmin: true, status: 'sent' });
+    const updated = await updateCollectionRow(req.params.id, { sentToAdmin: true, status: 'sent', touchVolunteerActivity: true });
     await logAction(collection.volunteerName, 'collection_sent_to_admin', '', '', `רשימת ${collection.guitars.length} גיטרות נשלחה לאישור מנהל`);
     res.json(updated);
   } catch (err) {
@@ -183,7 +183,7 @@ router.patch('/collection/:id/mark-collected', async (req, res) => {
     const updated = collection.guitars.map(g =>
       g.id === Number(guitarId) ? { ...g, status: 'pending', photoUrl: photoUrl || g.photoUrl || '' } : g
     );
-    const result = await updateCollectionRow(req.params.id, { guitars: updated });
+    const result = await updateCollectionRow(req.params.id, { guitars: updated, touchVolunteerActivity: true });
     const guitar = collection.guitars.find(g => g.id === Number(guitarId));
     if (guitar) {
       try { await logAction(collection.volunteerName, 'guitar_marked_collected', guitarId, guitar.name, 'סומנה כנאספת — ממתינה לאישור מנהל'); } catch {}
@@ -214,7 +214,7 @@ router.patch('/collection/:id/unmark-collected', async (req, res) => {
     const updated = collection.guitars.map(g =>
       g.id === Number(guitarId) ? { ...g, status: 'selected' } : g
     );
-    const result = await updateCollectionRow(req.params.id, { guitars: updated });
+    const result = await updateCollectionRow(req.params.id, { guitars: updated, touchVolunteerActivity: true });
     const guitar = collection.guitars.find(g => g.id === Number(guitarId));
     if (guitar) await logAction(collection.volunteerName, 'guitar_unmark_collected', guitarId, guitar.name, 'ביטול סימון איסוף');
     res.json(result);
