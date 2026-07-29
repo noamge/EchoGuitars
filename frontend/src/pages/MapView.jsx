@@ -595,6 +595,30 @@ export default function MapView({
 
   const handleManualSearch = async () => {
     if (!manualInput.trim()) return;
+    const query = manualInput.trim();
+
+    // Admin only: try matching a donor name among already-loaded guitars before falling
+    // back to an address geocode search — same search box, name takes priority.
+    if (!isVolunteer) {
+      const matches = guitars.filter(g => g.name && g.name.trim().toLowerCase().includes(query.toLowerCase()));
+      if (matches.length === 1) {
+        const g = matches[0];
+        if (g.lat && g.lon) {
+          setFilter('הכל');
+          setHighlightedId(g.id);
+        } else {
+          const addr = [g.city, g.street].filter(Boolean).join(', ') || 'לא צוינה כתובת';
+          alert(`${g.name} קיים/ת בטבלה אך לא מזוהה/ית על המפה.\nהכתובת הרשומה: ${addr}`);
+        }
+        return;
+      }
+      if (matches.length > 1) {
+        const list = matches.slice(0, 8).map(g => `• ${g.name}${g.city ? ` (${g.city})` : ''}`).join('\n');
+        alert(`נמצאו כמה תורמים עם שם דומה — נסה שם מלא יותר:\n${list}`);
+        return;
+      }
+    }
+
     setLocating(true);
     try {
       const res = await fetch(
@@ -875,7 +899,7 @@ export default function MapView({
             <div className={styles.manualRow}>
               <input
                 className={styles.manualInput}
-                placeholder="או הזן עיר / כתובת..."
+                placeholder="או הזן עיר / כתובת / שם תורם..."
                 value={manualInput}
                 onChange={e => setManualInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
