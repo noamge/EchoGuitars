@@ -83,7 +83,13 @@ function makeGroupIcon(count, bg) {
   });
 }
 
-function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isLocked = false, isMyCollection = false) {
+const GUITAR_TYPE_TAG = {
+  'קלאסית':  { letter: 'ק', color: '#f59e0b' },
+  'אקוסטית': { letter: 'א', color: '#78350f' },
+  'חשמלית':  { letter: 'ח', color: '#dc2626' },
+};
+
+function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isLocked = false, isMyCollection = false, guitarType = '') {
   // Nearby guitars keep their normal pending/collected color — a green ring highlights
   // them instead of recoloring the marker, so the color still tells you the guitar's status.
   const bg = highlighted ? '#4361ee'
@@ -99,10 +105,14 @@ function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isL
   const badge = count > 1
     ? `<div style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);padding:0 2px;">${count}</div>`
     : '';
+  const typeTag = !isLocked && GUITAR_TYPE_TAG[guitarType];
+  const typeBadge = typeTag
+    ? `<div title="${guitarType}" style="position:absolute;bottom:-3px;left:-3px;background:${typeTag.color};color:#fff;border-radius:4px;width:13px;height:13px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 2px rgba(0,0,0,0.3);line-height:1;">${typeTag.letter}</div>`
+    : '';
   const icon = isLocked ? '🔒' : '🎸';
   return L.divIcon({
     html: `<div style="position:relative;width:${size}px;height:${size}px;">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.9);box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring}${nearbyRing};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;user-select:none;">${icon}</div>${badge}
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.9);box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring}${nearbyRing};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;user-select:none;">${icon}</div>${badge}${typeBadge}
     </div>`,
     className: '',
     iconSize: [size, size],
@@ -245,7 +255,7 @@ function MapMarkers({
         <Marker
           key={key}
           position={[g0.lat, g0.lon]}
-          icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length, isLocked, isMyCollection)}
+          icon={makeGuitarIcon(isHighlighted, g0.collected, isNearby, group.length, isLocked, isMyCollection, g0.guitarType)}
           zIndexOffset={isHighlighted ? 1000 : isMyCollection ? 600 : isNearby ? 500 : 0}
           eventHandlers={{ popupopen: () => onMarkerOpen?.(g0.id) }}
         >
