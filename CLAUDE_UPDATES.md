@@ -306,6 +306,17 @@ backend/src/
 
 ---
 
+### 2026-07-29 — שיפור: spinner אמיתי + הודעת "טעינה ראשונית" חזרה, בצורה אלגנטית
+
+**קבצים שהשתנו:**
+- `frontend/src/pages/MapView.jsx` — ה-skeleton של המפה מקבל תוכן מרכזי: spinner מסתובב + "טוען את המפה והגיטרות…" + "בפתיחה ראשונה זה עשוי לקחת כמה שניות", במקום רק נצנוץ
+- `frontend/src/pages/MapView.module.css` — `.mapSkeletonContent/.mapSkeletonSpinner/.mapSkeletonText/.mapSkeletonSubtext`
+
+**מה נעשה:**
+נצנוץ בלבד לא נקרא מספיק ברור כ"טעינה" והמשתמש ביקש שההודעה על זמן טעינה ראשונית תחזור — הפעם משולבת בתוך ה-skeleton עצמו (לא toast נפרד שמחליק מלמעלה כמו קודם).
+
+---
+
 ## שינויים עתידיים — פורמט
 
 ```
