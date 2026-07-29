@@ -8,7 +8,28 @@
       "Bash(node --check src/index.js)",
       "Bash(npm run *)",
       "Bash(node -e ' *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "PowerShell(git *)",
+      "Bash(curl -s -X POST \"http://localhost:3001/api/guitars/admin/repair-ids?dry=true\")",
+      "PowerShell(Get-Job *)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/api/guitars)",
+      "Bash(pkill -f \"vite --port 5183\")",
+      "Bash(git commit *)",
+      "Bash(npx eslint *)",
+      "Bash(git stash *)",
+      "Bash(curl -s http://localhost:3001/api/guitars/stats)",
+      "Bash(pkill -f \"node src/index.js\")",
+      "Skill(fewer-permission-prompts)",
+      "Edit(frontend/src/**)",
+      "Edit(backend/src/**)",
+      "Edit(backend/scripts/**)",
+      "Write(frontend/src/**)",
+      "Write(backend/src/**)",
+      "Write(backend/scripts/**)"
     ]
   }
 }
