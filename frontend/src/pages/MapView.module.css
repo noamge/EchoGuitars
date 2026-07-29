@@ -238,6 +238,46 @@
 .fullscreenBtn:hover { background: var(--bg); }
 .loading { height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
 
+/* ── Loading skeletons ── */
+@keyframes skeletonShimmerMove {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.mapSkeleton {
+  height: 100%; width: 100%;
+  background: #e2eaf2;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.mapSkeletonIcon { color: #c3d4e3; z-index: 1; }
+.skeletonShimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  background-size: 200% 100%;
+  animation: skeletonShimmerMove 1.6s infinite;
+}
+
+.skeletonCard {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 10px; border: 1.5px solid var(--border);
+}
+.skeletonBlock {
+  position: relative; overflow: hidden;
+  background: var(--border);
+  border-radius: 6px;
+}
+.skeletonBlock::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+  background-size: 200% 100%;
+  animation: skeletonShimmerMove 1.4s infinite;
+}
+.skeletonAvatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.skeletonLines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.skeletonLine { height: 11px; border-radius: 4px; }
+
 .legend {
   display: flex; gap: 16px; padding: 8px 18px;
   background: var(--bg-card); border-top: 1px solid var(--border);
@@ -249,8 +289,8 @@
 .popup { font-size: 12px; min-width: 130px; direction: rtl; text-align: center; }
 .popupSub { color: var(--text-muted); font-size: 11px; margin: 3px 0; }
 .popupMeta { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
-.collected { color: #166534; font-weight: 600; }
-.pending   { color: #b45309; font-weight: 600; }
+.collected { color: #15803d; font-weight: 700; background: #dcfce7; border-radius: 6px; padding: 2px 8px; font-size: 11px; }
+.pending   { color: #92400e; font-weight: 700; background: #fef3c7; border-radius: 6px; padding: 2px 8px; font-size: 11px; }
 .popupCollectBtn {
   margin-top: 6px; width: 100%;
   padding: 5px 0; background: var(--primary); color: #fff;
@@ -441,7 +481,7 @@
 
 .nearbyCard {
   display: flex; align-items: flex-start; gap: 8px;
-  background: var(--bg-card); border-radius: 8px;
+  background: var(--bg-card); border-radius: var(--radius);
   padding: 8px 10px; border: 1.5px solid var(--border);
   transition: box-shadow 0.15s;
 }
@@ -453,7 +493,7 @@
 }
 
 .nearbyInfo { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.nearbyName { font-size: 14px; font-weight: 600; }
+.nearbyName { font-size: 14px; font-weight: 700; }
 .nearbyAddress { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
 .nearbyPhone { font-size: 13px; color: var(--primary); font-weight: 500; text-decoration: none; }
 .nearbyPhone:hover { text-decoration: underline; }
@@ -747,6 +787,8 @@
   padding: 20px;
 }
 .modal {
+  position: relative;
+  overflow: hidden;
   background: #fff;
   border-radius: 18px;
   padding: 32px 28px 24px;
@@ -756,6 +798,26 @@
   direction: rtl;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ── Confetti burst (thank-you modal) ── */
+.confettiWrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.confettiPiece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confettiFall 1.5s ease-in forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(340px) rotate(560deg); opacity: 0; }
 }
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.85); }
@@ -952,20 +1014,6 @@
   font-size: 16px;
   flex-shrink: 0;
 }
-.toastClose {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.7);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0 0 0 4px;
-  margin-right: auto;
-  line-height: 1;
-  transition: color 0.15s;
-  pointer-events: auto;
-}
-.toastClose:hover { color: #fff; }
-
 .toastHint {
   background: rgba(8, 145, 178, 0.82);
 }

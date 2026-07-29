@@ -5,6 +5,8 @@
 }
 
 :root {
+  /* Lets native form controls (inputs, scrollbars) auto-theme with the OS setting too */
+  color-scheme: light dark;
   --primary: #2e7fbf;
   --primary-light: #5ba3d9;
   --primary-dark: #1a3a5c;
@@ -18,6 +20,24 @@
   --radius: 12px;
   --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
   --shadow-hover: 0 4px 12px rgba(0,0,0,0.12), 0 8px 32px rgba(0,0,0,0.08);
+}
+
+/* Follows the phone/browser's own light-dark preference — no in-app toggle */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #5ba3d9;
+    --primary-light: #7cb8e3;
+    --primary-dark: #cfe6f7;
+    --accent: #e2a077;
+    --accent-dark: #eab68f;
+    --bg: #101820;
+    --bg-card: #1a2530;
+    --text: #e6edf5;
+    --text-muted: #92a5b8;
+    --border: #2c3e4d;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.25);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.4), 0 8px 32px rgba(0,0,0,0.3);
+  }
 }
 
 body {

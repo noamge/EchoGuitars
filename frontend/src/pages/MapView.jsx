@@ -45,6 +45,13 @@ function MapInvalidator({ fullscreen }) {
 const CLUSTER_RADIUS_PX = 30;
 const MARKER_COLOR = { collected: '#2d6a4f', pending: '#f4a261', locked: '#7c3aed' };
 
+const CONFETTI_COLORS = ['#f43f5e', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#eab308'];
+const CONFETTI_PIECES = Array.from({ length: 18 }, (_, i) => ({
+  left: `${(i * 53) % 100}%`,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  delay: `${(i % 9) * 0.06}s`,
+}));
+
 const WA_DONOR_MSG = encodeURIComponent(
   '😊 תודה רבה על התרומה למיזם אקו! 🎸\nכדי שנתאם את איסוף הגיטרה אשמח שתכתוב כתובת מדויקת וזמן אפשרי לאיסוף.\nתודה!'
 );
@@ -310,9 +317,9 @@ function buildAdminWaUrl(collection, volunteerName, volunteerAddress) {
 
 function guitarStatusLabel(status) {
   switch (status) {
-    case 'pending':        return { text: '✓ נאספה', color: '#16a34a' };
-    case 'approved':       return { text: '✓ נאספה ואושרה', color: '#16a34a' };
-    case 'admin_collected': return { text: 'מנהל עדכן שהגיטרה כבר נאספה', color: '#92400e' };
+    case 'pending':        return { text: '✓ נאספה', color: '#15803d', bg: '#dcfce7' };
+    case 'approved':       return { text: '✓ נאספה ואושרה', color: '#15803d', bg: '#dcfce7' };
+    case 'admin_collected': return { text: 'מנהל עדכן שהגיטרה כבר נאספה', color: '#92400e', bg: '#fef3c7' };
     default:               return null;
   }
 }
@@ -343,7 +350,6 @@ export default function MapView({
   const [highlightedId, setHighlightedId] = useState(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [viewMode, setViewMode]           = useState('cluster');
-  const [showToast, setShowToast]         = useState(isVolunteer);
   const [showSelectHint, setShowSelectHint] = useState(null); // null=never shown, true=visible, false=hiding
   const [selectedIds, setSelectedIds]     = useState(new Set());
   const [nearbyLimit, setNearbyLimit]     = useState(10);
@@ -357,12 +363,6 @@ export default function MapView({
   const [photoPreview, setPhotoPreview]   = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef(null);
-
-  useEffect(() => {
-    if (!isVolunteer) return;
-    const t = setTimeout(() => setShowToast(false), 6000);
-    return () => clearTimeout(t);
-  }, [isVolunteer]);
 
   const openWaze = useCallback((city, street) => {
     const addr = [street, city].filter(Boolean).join(', ');
@@ -604,13 +604,6 @@ export default function MapView({
 
   return (
     <div className={`${styles.page} ${isVolunteer ? styles.pageVolunteer : ''}`}>
-      {isVolunteer && (
-        <div className={`${styles.toast} ${showToast ? styles.toastVisible : styles.toastHidden}`}>
-          <span className={styles.toastIcon}>⏳</span>
-          בפתיחה ראשונה הנתונים עשויים להיטען לאחר מספר שניות – נא להמתין
-          <button className={styles.toastClose} onClick={() => setShowToast(false)}>✕</button>
-        </div>
-      )}
       {isVolunteer && showSelectHint !== null && (
         <div className={`${styles.toast} ${styles.toastHint} ${showSelectHint ? styles.toastVisible : styles.toastHidden}`}>
           <span className={styles.toastIcon}>🎸</span>
@@ -701,7 +694,12 @@ export default function MapView({
           >
             {mapFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
-          {loading && <div className={styles.loading}>טוען...</div>}
+          {loading && (
+            <div className={styles.mapSkeleton}>
+              <div className={styles.skeletonShimmer} />
+              <MapPin size={36} className={styles.mapSkeletonIcon} />
+            </div>
+          )}
           {error   && <div className={styles.loading} style={{color:'red'}}>שגיאה: {error}</div>}
           {!loading && !error && (
             <MapContainer center={[31.5, 35.0]} zoom={8} className={styles.map}>
@@ -799,7 +797,7 @@ export default function MapView({
                       )}
                       {sl && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: sl.color }}>{sl.text}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: sl.color, background: sl.bg, borderRadius: 6, padding: '2px 8px' }}>{sl.text}</span>
                           {g.status === 'pending' && (
                             <button className={styles.undoBtn} onClick={e => { e.stopPropagation(); onUnmarkCollected?.(g.id); }} title="בטל סימון">↩</button>
                           )}
@@ -881,14 +879,28 @@ export default function MapView({
           </div>
         )}
 
-        {nearby.length === 0 && !userLocation && mapSelectedGuitars.length === 0 && (
+        {loading && (
+          <div className={styles.nearbyList}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className={styles.skeletonCard}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonAvatar}`} />
+                <div className={styles.skeletonLines}>
+                  <div className={`${styles.skeletonBlock} ${styles.skeletonLine}`} style={{ width: '60%' }} />
+                  <div className={`${styles.skeletonBlock} ${styles.skeletonLine}`} style={{ width: '40%' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && nearby.length === 0 && !userLocation && mapSelectedGuitars.length === 0 && (
           <div className={styles.emptyNearby}>
             <MapPin size={40} color="#d1d5db" />
             <p>כדי לראות גיטרות בקרבתך —<br/>הזן אזור איסוף למעלה</p>
           </div>
         )}
 
-        {(nearby.length > 0 || mapSelectedGuitars.length > 0) && (
+        {!loading && (nearby.length > 0 || mapSelectedGuitars.length > 0) && (
           <div className={styles.nearbyList}>
             {nearby.length > 0 && (
               <>
@@ -1097,6 +1109,11 @@ export default function MapView({
       {thankyouModal && (
         <div className={styles.modalOverlay} onClick={() => setThankyouModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.confettiWrap}>
+              {CONFETTI_PIECES.map((c, i) => (
+                <span key={i} className={styles.confettiPiece} style={{ left: c.left, background: c.color, animationDelay: c.delay }} />
+              ))}
+            </div>
             <div className={styles.modalIcon}>🙏</div>
             <h3 className={styles.modalTitle}>תודה רבה על איסוף הגיטרה!</h3>
             <p className={styles.modalBody}>
