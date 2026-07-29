@@ -77,24 +77,25 @@ function makeGroupIcon(count, bg) {
 }
 
 function makeGuitarIcon(highlighted, collected, isNearby = false, count = 1, isLocked = false, isMyCollection = false) {
+  // Nearby guitars keep their normal pending/collected color — a green ring highlights
+  // them instead of recoloring the marker, so the color still tells you the guitar's status.
   const bg = highlighted ? '#4361ee'
     : isMyCollection ? '#0891b2'
     : isLocked ? MARKER_COLOR.locked
-    : isNearby ? '#22c55e'
     : (collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
   const size = highlighted ? 28 : isMyCollection ? 26 : isNearby ? 26 : 22;
   const fontSize = highlighted ? 13 : 11;
   const ring = highlighted ? ',0 0 0 2.5px #4361ee88'
     : isMyCollection ? ',0 0 0 3px #0891b288'
-    : isNearby ? ',0 0 0 2.5px #22c55e66'
     : isLocked ? ',0 0 0 2.5px #7c3aed66' : '';
+  const nearbyRing = isNearby && !highlighted && !isLocked ? ',0 0 0 2px #fff,0 0 0 4.5px #22c55e' : '';
   const badge = count > 1
     ? `<div style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);padding:0 2px;">${count}</div>`
     : '';
   const icon = isLocked ? '🔒' : '🎸';
   return L.divIcon({
     html: `<div style="position:relative;width:${size}px;height:${size}px;">
-      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.9);box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;user-select:none;">${icon}</div>${badge}
+      <div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.9);box-shadow:0 1px 4px rgba(0,0,0,0.3)${ring}${nearbyRing};display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;user-select:none;">${icon}</div>${badge}
     </div>`,
     className: '',
     iconSize: [size, size],
@@ -261,7 +262,8 @@ function MapMarkers({
 
     if (group.length === 1) {
       const g = group[0];
-      const fillColor = isHighlighted ? '#4361ee' : isMyCollection ? '#0891b2' : isLocked ? MARKER_COLOR.locked : isNearby ? '#22c55e' : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+      const fillColor = isHighlighted ? '#4361ee' : isMyCollection ? '#0891b2' : isLocked ? MARKER_COLOR.locked : (g.collected ? MARKER_COLOR.collected : MARKER_COLOR.pending);
+      const showNearbyRing = isNearby && !isHighlighted && !isLocked;
       const radius = isHighlighted ? 14 : isNearby ? 11 : 8;
       return (
         <CircleMarker
@@ -269,7 +271,7 @@ function MapMarkers({
           center={[g.lat, g.lon]}
           radius={radius}
           fillColor={fillColor}
-          color="#fff" weight={isHighlighted || isNearby ? 3 : 2} fillOpacity={isHighlighted || isNearby ? 1 : 0.85}
+          color={showNearbyRing ? '#22c55e' : '#fff'} weight={isHighlighted || isNearby ? 3 : 2} fillOpacity={isHighlighted || isNearby ? 1 : 0.85}
           eventHandlers={{ popupopen: () => onMarkerOpen?.(g.id) }}
         >
           <Popup><div className={styles.popup}>{guitarPopupItem(g, false)}</div></Popup>
@@ -738,7 +740,7 @@ export default function MapView({
         <div className={styles.legend}>
           {!isVolunteer && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.collected}}/> נאסף ({guitars.filter(g=>g.collected).length})</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending}}/> ממתין ({guitars.filter(g=>!g.collected).length})</div>
-          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#22c55e'}}/> גיטרות בסביבתי</div>}
+          {nearbyIds.size > 0 && <div className={styles.legendItem}><span className={styles.dot} style={{background: MARKER_COLOR.pending, boxShadow: '0 0 0 2px #22c55e'}}/> גיטרות בסביבתי</div>}
           {isVolunteer && collectionView && <div className={styles.legendItem}><span className={styles.dot} style={{background:'#0891b2'}}/> ברשימתי</div>}
           <div className={styles.legendItem}><span className={styles.dot} style={{background:'#4361ee'}}/> המיקום שלי</div>
         </div>
