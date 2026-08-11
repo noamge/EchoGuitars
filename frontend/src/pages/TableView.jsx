@@ -90,6 +90,7 @@ export default function TableView() {
   const [marking, setMarking]           = useState(null);
   const [deleting, setDeleting]         = useState(null);
   const [togglingRepaired, setTogglingRepaired] = useState(null);
+  const [togglingIrrelevant, setTogglingIrrelevant] = useState(null);
   const [editingWhoRepairs, setEditingWhoRepairs] = useState(null); // guitar id
   const [whoRepairsValue, setWhoRepairsValue]     = useState('');
   const [thankedIds, setThankedIds] = useState(new Set());
@@ -213,6 +214,18 @@ export default function TableView() {
     }
   };
 
+  const toggleIrrelevant = async (g) => {
+    setTogglingIrrelevant(g.id);
+    try {
+      await updateGuitar(g.id, { irrelevant: !g.irrelevant });
+      setGuitars(prev => prev.map(r => r.id === g.id ? { ...r, irrelevant: !g.irrelevant } : r));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setTogglingIrrelevant(null);
+    }
+  };
+
   const startEditWhoRepairs = (g) => {
     setEditingWhoRepairs(g.id);
     setWhoRepairsValue(g.whoRepairs || '');
@@ -282,6 +295,12 @@ export default function TableView() {
                   תוקן {sortKey === 'repaired' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'}
                 </th>
                 <th style={{ width: 120, minWidth: 120 }}>מי מתקן</th>
+                <th style={{ width: 100, minWidth: 100 }} className={styles.sortableTh} onClick={() => handleSort('irrelevant')} title="מיין לפי לא רלוונטי">
+                  לא רלוונטי {sortKey === 'irrelevant' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'}
+                </th>
+                <th style={{ width: 90, minWidth: 90 }} className={styles.sortableTh} onClick={() => handleSort('soldPrice')} title="מיין לפי נמכר">
+                  נמכר {sortKey === 'soldPrice' ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'}
+                </th>
                 <th style={{ width: 110, minWidth: 110 }}>פעולה</th>
               </tr>
             </thead>
@@ -342,6 +361,23 @@ export default function TableView() {
                           {g.whoRepairs || <span style={{ color: '#9ca3af' }}>לחץ לעריכה</span>}
                         </span>
                       )}
+                    </td>
+
+                    {/* לא רלוונטי — toggle button */}
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        className={g.irrelevant ? styles.irrelevantBtnOn : styles.irrelevantBtnOff}
+                        onClick={() => toggleIrrelevant(g)}
+                        disabled={togglingIrrelevant === g.id}
+                        title={g.irrelevant ? 'בטל סימון "לא רלוונטי"' : 'סמן כלא רלוונטי (התורם מסר למישהו אחר)'}
+                      >
+                        {togglingIrrelevant === g.id ? '...' : g.irrelevant ? '🚫 לא רלוונטי' : '—'}
+                      </button>
+                    </td>
+
+                    {/* נמכר — display only, set from עדכון מהיר */}
+                    <td style={{ textAlign: 'center' }}>
+                      {g.sold ? `💰 ₪${g.soldPrice ?? ''}` : '—'}
                     </td>
 
                     <td>

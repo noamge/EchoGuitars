@@ -209,6 +209,38 @@
 .repairedBtnOn:disabled,
 .repairedBtnOff:disabled { opacity: 0.5; cursor: wait; }
 
+/* ── Irrelevant toggle ── */
+.irrelevantBtnOn {
+  padding: 3px 10px;
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.irrelevantBtnOn:hover:not(:disabled) { background: #4b5563; }
+
+.irrelevantBtnOff {
+  padding: 3px 10px;
+  background: none;
+  color: #9ca3af;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.irrelevantBtnOff:hover:not(:disabled) {
+  border-color: #6b7280;
+  color: #6b7280;
+}
+.irrelevantBtnOn:disabled,
+.irrelevantBtnOff:disabled { opacity: 0.5; cursor: wait; }
+
 /* ── Who repairs inline edit ── */
 .whoRepairsDisplay {
   cursor: pointer;

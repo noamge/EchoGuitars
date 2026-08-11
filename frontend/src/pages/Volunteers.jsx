@@ -5,6 +5,7 @@ import {
   approveGuitarCollection,
   rejectGuitarCollection,
   adminMarkGuitarCollected,
+  removeGuitarFromCollection,
 } from '../api/client';
 import styles from './Volunteers.module.css';
 
@@ -29,7 +30,7 @@ const ACTION_LABELS = {
   guitar_deleted:            '🗑 נמחק',
 };
 
-function GuitarChip({ g, collectionId, onApprove, onReject, onAdminMarkCollected, approving, adminMarking }) {
+function GuitarChip({ g, collectionId, onApprove, onReject, onAdminMarkCollected, onRemove, approving, adminMarking, removing }) {
   const sl = GUITAR_STATUS_LABELS[g.status] || { text: g.status, bg: '#f3f4f6', color: '#374151' };
   const isPending  = g.status === 'pending';
   const isSelected = g.status === 'selected';
@@ -76,6 +77,16 @@ function GuitarChip({ g, collectionId, onApprove, onReject, onAdminMarkCollected
             {adminMarking === key ? '...' : '✓ נאסף כבר'}
           </button>
         )}
+        {(isSelected || isPending) && (
+          <button
+            className={styles.removeBtn}
+            onClick={() => onRemove(collectionId, g.id, g.name)}
+            disabled={removing === key}
+            title="הסר מרשימת האיסוף (הגיטרה תשוחרר ותחזור להיות זמינה)"
+          >
+            {removing === key ? '...' : '✕'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -89,6 +100,7 @@ export default function Volunteers() {
   const [tab, setTab]                 = useState('active'); // active | log
   const [approving, setApproving]     = useState(null); // `${collectionId}-${guitarId}`
   const [adminMarking, setAdminMarking] = useState(null); // `${collectionId}-${guitarId}`
+  const [removing, setRemoving]       = useState(null); // `${collectionId}-${guitarId}`
 
   useEffect(() => {
     getVolunteerCollections()
@@ -120,6 +132,21 @@ export default function Volunteers() {
       alert('שגיאה: ' + err.message);
     } finally {
       setAdminMarking(null);
+    }
+  };
+
+  const handleRemove = async (collectionId, guitarId, guitarName) => {
+    if (!window.confirm(`להסיר את "${guitarName}" מרשימת האיסוף? הגיטרה תשוחרר ותחזור להיות זמינה במפה למתנדבים אחרים.`)) return;
+    setRemoving(`${collectionId}-${guitarId}`);
+    try {
+      await removeGuitarFromCollection(collectionId, guitarId);
+      setCollections(prev => prev
+        .map(c => c.id === collectionId ? { ...c, guitars: c.guitars.filter(g => g.id !== guitarId) } : c)
+        .filter(c => c.guitars.length > 0));
+    } catch (err) {
+      alert('שגיאה: ' + err.message);
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -203,8 +230,10 @@ export default function Volunteers() {
                     onApprove={handleApprove}
                     onReject={handleReject}
                     onAdminMarkCollected={handleAdminMarkCollected}
+                    onRemove={handleRemove}
                     approving={approving}
                     adminMarking={adminMarking}
+                    removing={removing}
                   />
                 ))}
               </div>

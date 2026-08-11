@@ -84,16 +84,26 @@ router.post('/collection', async (req, res) => {
     // New guitars arrive with status 'selected'; lock them
     const newGuitars = (guitars || []).map(g => ({ ...g, status: 'selected' }));
 
-    let collection;
-    if (collectionId) {
-      // Extend existing collection
-      collection = await getCollection(collectionId);
-      if (!collection) return res.status(404).json({ error: 'Collection not found' });
+    let targetId = collectionId;
+    let existing = null;
+    if (targetId) {
+      existing = await getCollection(targetId);
+      if (!existing) return res.status(404).json({ error: 'Collection not found' });
+    } else {
+      // Browser lost its saved collectionId (new device, cleared storage, re-login).
+      // Reuse this volunteer's still-open collection instead of forking a duplicate.
+      const all = await getCollections();
+      existing = all.find(c => c.status !== 'closed' && c.volunteerName.trim() === volunteerName.trim()) || null;
+      if (existing) targetId = existing.id;
+    }
 
-      const existingIds = new Set(collection.guitars.map(g => g.id));
+    let collection;
+    if (existing) {
+      // Extend existing collection
+      const existingIds = new Set(existing.guitars.map(g => g.id));
       const toAdd = newGuitars.filter(g => !existingIds.has(g.id));
-      const merged = [...collection.guitars, ...toAdd];
-      collection = await updateCollectionRow(collectionId, { guitars: merged, touchVolunteerActivity: true });
+      const merged = [...existing.guitars, ...toAdd];
+      collection = await updateCollectionRow(targetId, { guitars: merged, touchVolunteerActivity: true });
 
       // Lock only newly added guitars
       for (const g of toAdd) {

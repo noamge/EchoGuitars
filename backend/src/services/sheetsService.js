@@ -31,6 +31,10 @@ const COL = {
   ID:             20,  // U
   IMAGE_URL:      21,  // V
   IN_COLLECTION:  22,  // W — volunteer name locking this guitar; empty = available
+  // X/Y/Z are reserved for single-cell app metadata (skipped/thanked/verified address IDs) — see loadSkippedAddressIds etc.
+  IRRELEVANT:     26,  // AA — donor gave the guitar away elsewhere before we collected it
+  SOLD:           27,  // AB — sold instead of donated (after collection)
+  SOLD_PRICE:     28,  // AC — sale price in ₪, only meaningful when SOLD is true
 };
 
 // Collections sheet column indices (0-based)
@@ -291,6 +295,9 @@ function rowToGuitar(row, rowIndex) {
     imageUrl:  row[COL.IMAGE_URL]  || '',
     inCollection: (row[COL.IN_COLLECTION] || '').split('|')[0].trim(),
     inCollectionDate: (row[COL.IN_COLLECTION] || '').split('|')[1]?.trim() || '',
+    irrelevant: row[COL.IRRELEVANT] === 'TRUE',
+    sold:       row[COL.SOLD] === 'TRUE',
+    soldPrice:  row[COL.SOLD_PRICE] ? Number(row[COL.SOLD_PRICE]) : null,
     region:    getRegion(city),
   };
 }
@@ -300,7 +307,7 @@ async function getAllGuitars() {
   const sheets = getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A2:W`,
+    range: `${SHEET_TAB}!A2:AC`,
   });
   const rows = res.data.values || [];
   return rows
@@ -339,10 +346,10 @@ async function updateGuitarByRowIndex(stableId, updates) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A${rowIndex}:W${rowIndex}`,
+    range: `${SHEET_TAB}!A${rowIndex}:AC${rowIndex}`,
   });
   const row = (res.data.values || [[]])[0];
-  while (row.length < 23) row.push('');
+  while (row.length < 29) row.push('');
 
   if (updates.collected   !== undefined) row[COL.COLLECTED]  = updates.collected ? 'TRUE' : 'FALSE';
   if (updates.notes       !== undefined && updates.notes.trim()) {
@@ -357,10 +364,13 @@ async function updateGuitarByRowIndex(stableId, updates) {
   if (updates.model       !== undefined) row[COL.MODEL]      = updates.model;
   if (updates.imageUrl    !== undefined) row[COL.IMAGE_URL]  = updates.imageUrl;
   if (updates.inCollection !== undefined) row[COL.IN_COLLECTION] = updates.inCollection;
+  if (updates.irrelevant  !== undefined) row[COL.IRRELEVANT] = updates.irrelevant ? 'TRUE' : 'FALSE';
+  if (updates.sold        !== undefined) row[COL.SOLD]       = updates.sold ? 'TRUE' : 'FALSE';
+  if (updates.soldPrice   !== undefined) row[COL.SOLD_PRICE] = updates.soldPrice === null ? '' : String(updates.soldPrice);
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A${rowIndex}:W${rowIndex}`,
+    range: `${SHEET_TAB}!A${rowIndex}:AC${rowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -465,8 +475,8 @@ async function applyRowFormatting(sheets, targetRow1Based) {
     }
   }
 
-  // Set BOOLEAN (checkbox) validation for collected and repaired columns
-  for (const colIdx of [COL.COLLECTED, COL.REPAIRED]) {
+  // Set BOOLEAN (checkbox) validation for collected/repaired/irrelevant/sold columns
+  for (const colIdx of [COL.COLLECTED, COL.REPAIRED, COL.IRRELEVANT, COL.SOLD]) {
     requests.push({
       repeatCell: {
         range: {
@@ -530,7 +540,7 @@ async function addGuitar(data) {
   }
   const newId = maxId + 1;
 
-  const row = new Array(23).fill('');
+  const row = new Array(29).fill('');
   row[COL.SUBMISSION_TIME] = formatSubmissionTime();
   row[COL.NAME]        = data.name        || '';
   row[COL.PHONE]       = data.phone       || '';
@@ -541,11 +551,13 @@ async function addGuitar(data) {
   row[COL.NOTES]       = data.notes       || '';
   row[COL.IMAGE_URL]   = data.imageUrl    || '';
   row[COL.ID]          = String(newId);
+  row[COL.IRRELEVANT]  = 'FALSE';
+  row[COL.SOLD]        = 'FALSE';
 
   // Write to exact computed row (always starts at column A — no column shift bug)
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_TAB}!A${newRowIndex}:W${newRowIndex}`,
+    range: `${SHEET_TAB}!A${newRowIndex}:AC${newRowIndex}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -681,6 +693,33 @@ async function updateCollectionRow(id, fields) {
     requestBody: { values: [row] },
   });
   return rowToCollection(row);
+}
+
+async function deleteCollectionRow(id) {
+  const { sheets, rows } = await getCollectionRows();
+  const idx = rows.findIndex(r => r[COL_COLL.ID] === id);
+  if (idx === -1) throw new Error(`Collection ${id} not found`);
+  const rowIndex = idx + 2;
+
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    fields: 'sheets.properties',
+  });
+  const sheetMeta = meta.data.sheets.find(s => s.properties.title === COLLECTIONS_TAB);
+  const sheetId = sheetMeta ? sheetMeta.properties.sheetId : 0;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    requestBody: {
+      requests: [{
+        deleteDimension: {
+          range: { sheetId, dimension: 'ROWS', startIndex: rowIndex - 1, endIndex: rowIndex },
+        },
+      }],
+    },
+  });
+
+  return { id, deleted: true };
 }
 
 // ── Check collected status for a set of guitar IDs ───────────────────────────
@@ -917,6 +956,7 @@ module.exports = {
   getCollection,
   createCollection,
   updateCollectionRow,
+  deleteCollectionRow,
   // Action Log
   logAction,
   getActionLog,

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds, loadThankedIds, saveThankedIds, loadAddressVerifiedIds, saveAddressVerifiedIds } = require('../services/sheetsService');
+const { getAllGuitars, getGuitarByName, updateGuitarByRowIndex, suggestStreet, addGuitar, deleteGuitarRow, repairGuitarIds, loadSkippedAddressIds, saveSkippedAddressIds, loadThankedIds, saveThankedIds, loadAddressVerifiedIds, saveAddressVerifiedIds, getCollections, updateCollectionRow, logAction, unlockGuitar } = require('../services/sheetsService');
 const { geocodeAddress, suggestAddress, clearGeocodeCache } = require('../services/geocodeService');
 const { guitars: mockGuitars } = require('../mockData');
 
@@ -39,6 +39,18 @@ async function fetchGuitars() {
     return mockGuitars;
   }
   return getAllGuitars();
+}
+
+// Strip a guitar out of any volunteer collection still holding it (unlocked or no longer pickup-relevant)
+async function purgeGuitarFromCollections(id, details) {
+  const collections = await getCollections();
+  for (const c of collections) {
+    const guitar = c.guitars.find(g => g.id === id);
+    if (!guitar) continue;
+    const remaining = c.guitars.filter(g => g.id !== id);
+    await updateCollectionRow(c.id, { guitars: remaining });
+    await logAction('מנהל', 'guitar_unlocked', id, guitar.name, details);
+  }
 }
 
 // GET /api/guitars — all guitars, optional filters: ?region=&city=&type=&collected=true/false
@@ -120,7 +132,7 @@ router.get('/stats', async (req, res) => {
 // GET /api/guitars/map — guitars with geocoded coordinates (for map view)
 router.get('/map', async (req, res) => {
   try {
-    const guitars = await fetchGuitars();
+    const guitars = (await fetchGuitars()).filter(g => !g.irrelevant);
     if (useMock()) {
       return res.json(guitars.filter(g => g.lat && g.lon));
     }
@@ -344,6 +356,14 @@ router.delete('/:id', async (req, res) => {
       return res.json({ id, deleted: true });
     }
     const result = await deleteGuitarRow(id);
+
+    // Guitar row is gone — strip it out of any volunteer collection still holding it
+    try {
+      await purgeGuitarFromCollections(id, 'נמחקה מהמאגר — הוסרה מרשימת האיסוף');
+    } catch (cleanupErr) {
+      console.error('collection cleanup after delete failed:', cleanupErr.message);
+    }
+
     res.json(result);
   } catch (err) {
     console.error('delete error:', err.message);
@@ -361,6 +381,16 @@ router.patch('/:id', async (req, res) => {
       return res.json({ ...g, ...req.body, id });
     }
     const updated = await updateGuitarByRowIndex(id, req.body);
+
+    // No longer pickup-relevant — free it up and drop it from any volunteer's list
+    if (req.body.irrelevant === true || req.body.sold === true) {
+      const reason = req.body.irrelevant === true ? 'סומנה לא רלוונטית' : 'סומנה כנמכרה';
+      try { await unlockGuitar(id); } catch {}
+      try { await purgeGuitarFromCollections(id, `${reason} — הוסרה מרשימת האיסוף`); } catch (cleanupErr) {
+        console.error('collection cleanup after status change failed:', cleanupErr.message);
+      }
+    }
+
     res.json(updated);
   } catch (err) {
     console.error(err);

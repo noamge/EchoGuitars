@@ -50,6 +50,22 @@ const ACTIONS = [
     bg: '#faf5ff',
     border: '#c4b5fd',
   },
+  {
+    key: 'sold',
+    icon: '💰',
+    label: 'גיטרה נמכרה',
+    color: '#a16207',
+    bg: '#fefce8',
+    border: '#fde047',
+  },
+  {
+    key: 'irrelevant',
+    icon: '🚫',
+    label: 'לא רלוונטי',
+    color: '#6b7280',
+    bg: '#f9fafb',
+    border: '#d1d5db',
+  },
 ];
 
 // ─── AI Mode (unchanged) ──────────────────────────────────────────────────────
@@ -298,6 +314,7 @@ export default function QuickEdit() {
   const [collectNotes, setCollectNotes] = useState('');
   const [whoRepairs, setWhoRepairs]   = useState('');
   const [orgName, setOrgName]         = useState('');
+  const [soldPrice, setSoldPrice]     = useState('');
 
   const [submitting, setSubmitting]       = useState(false);
   const [actionResults, setActionResults] = useState([]);
@@ -306,7 +323,7 @@ export default function QuickEdit() {
   useEffect(() => {
     setSelectedGuitars([]); setSearchQuery(''); setSearchResults([]); setSearching(false);
     setNewDonorMode(false); setNewDonorName(''); setNewDonorPhone(''); setNewDonorCity(''); setNewDonorGuitarType('');
-    setCollector(''); setDestination(''); setCollectNotes(''); setWhoRepairs(''); setOrgName('');
+    setCollector(''); setDestination(''); setCollectNotes(''); setWhoRepairs(''); setOrgName(''); setSoldPrice('');
     setActionResults([]);
   }, [activeAction]);
 
@@ -378,6 +395,7 @@ export default function QuickEdit() {
     if (selectedGuitars.length === 0) { toast.error('יש לבחור לפחות גיטרה אחת'); setSubmitting(false); return; }
     if (activeAction === 'repair_send' && !whoRepairs.trim()) { toast.error('יש להזין שם המתקן'); setSubmitting(false); return; }
     if (activeAction === 'donate' && !orgName.trim()) { toast.error('יש להזין שם הארגון'); setSubmitting(false); return; }
+    if (activeAction === 'sold' && !String(soldPrice).trim()) { toast.error('יש להזין מחיר מכירה'); setSubmitting(false); return; }
 
     const results = [];
     const warnings = [];
@@ -386,6 +404,29 @@ export default function QuickEdit() {
       if (activeAction === 'donate' && g.donatedTo) {
         results.push({ guitar: g, ok: false, err: `כבר נתרמה בעבר ל${g.donatedTo}, ייתכן שטעית` });
         continue;
+      }
+      if (activeAction === 'donate' && g.sold) {
+        results.push({ guitar: g, ok: false, err: `כבר סומנה כנמכרה, לא ניתן לתרום` });
+        continue;
+      }
+      if (activeAction === 'sold' && g.donatedTo) {
+        results.push({ guitar: g, ok: false, err: `כבר נתרמה ל${g.donatedTo}, לא ניתן לסמן כנמכרה` });
+        continue;
+      }
+      if (activeAction === 'sold' && g.sold) {
+        results.push({ guitar: g, ok: false, err: `כבר סומנה כנמכרה בעבר (₪${g.soldPrice})` });
+        continue;
+      }
+      if ((activeAction === 'donate' || activeAction === 'sold') && g.irrelevant) {
+        results.push({ guitar: g, ok: false, err: `מסומנת כלא רלוונטית — יש לבטל את הסימון בטבלה הראשית קודם` });
+        continue;
+      }
+      if (activeAction === 'irrelevant' && (g.donatedTo || g.sold)) {
+        results.push({ guitar: g, ok: false, err: g.sold ? `כבר נמכרה, לא ניתן לסמן כלא רלוונטית` : `כבר נתרמה ל${g.donatedTo}, לא ניתן לסמן כלא רלוונטית` });
+        continue;
+      }
+      if (activeAction === 'irrelevant' && g.collected) {
+        warnings.push(`${g.name} — כבר סומנה כנאספה, בטוח שהיא לא רלוונטית?`);
       }
       if (activeAction === 'repaired') {
         if (g.repaired)    warnings.push(`${g.name} — כבר סומנה כתוקנה בעבר`);
@@ -397,6 +438,8 @@ export default function QuickEdit() {
         if (activeAction === 'repair_send') updates = { whoRepairs: whoRepairs.trim() };
         if (activeAction === 'repaired')    updates = { repaired: true };
         if (activeAction === 'donate')      updates = { donatedTo: orgName.trim(), collected: true };
+        if (activeAction === 'sold')        updates = { sold: true, soldPrice: Number(soldPrice), collected: true };
+        if (activeAction === 'irrelevant')  updates = { irrelevant: true };
         await updateGuitar(g.id, updates);
         results.push({ guitar: g, ok: true, wasDonate: activeAction === 'donate', donateOrg: orgName.trim() });
       } catch (err) {
@@ -420,6 +463,8 @@ export default function QuickEdit() {
       case 'repair_send': return `🔧 שלח ${n} גיטרות לתיקון`;
       case 'repaired':    return `✅ סמן ${n} גיטרות כתוקנות`;
       case 'donate':      return `🎁 סמן ${n} גיטרות כנתרמו`;
+      case 'sold':        return `💰 סמן ${n} גיטרות כנמכרו`;
+      case 'irrelevant':  return `🚫 סמן ${n} גיטרות כלא רלוונטיות`;
       default:            return 'שמור';
     }
   };
@@ -495,6 +540,19 @@ export default function QuickEdit() {
             </div>
           )}
 
+          {activeAction === 'sold' && (
+            <div className={styles.actionFields}>
+              <div>
+                <label className={styles.label}>מחיר מכירה (₪) *</label>
+                <input className={styles.input} type="number" min="0" placeholder="לדוגמה: 300" value={soldPrice} onChange={e => setSoldPrice(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {activeAction === 'irrelevant' && (
+            <p className={styles.sectionSub} style={{ marginBottom: 0 }}>לתורמים שבסוף מסרו את הגיטרה למישהו אחר — הגיטרה תוסר מרשימות איסוף פעילות ותסומן כלא רלוונטית</p>
+          )}
+
           {/* Guitar search */}
           <div>
             <label className={styles.label}>חיפוש תורמים</label>
@@ -521,9 +579,11 @@ export default function QuickEdit() {
             {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
               <div className={styles.newDonorPrompt}>
                 <span>"{searchQuery}" לא נמצא</span>
-                <button type="button" className={styles.newDonorBtn} onClick={openNewDonorMode}>
-                  + הוסף תורם חדש
-                </button>
+                {activeAction !== 'sold' && activeAction !== 'irrelevant' && (
+                  <button type="button" className={styles.newDonorBtn} onClick={openNewDonorMode}>
+                    + הוסף תורם חדש
+                  </button>
+                )}
               </div>
             )}
           </div>

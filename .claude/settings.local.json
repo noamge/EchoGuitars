@@ -29,7 +29,8 @@
       "Edit(backend/scripts/**)",
       "Write(frontend/src/**)",
       "Write(backend/src/**)",
-      "Write(backend/scripts/**)"
+      "Write(backend/scripts/**)",
+      "Bash(timeout 15 npx vite build --mode development)"
     ]
   }
 }

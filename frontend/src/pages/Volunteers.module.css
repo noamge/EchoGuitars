@@ -210,6 +210,24 @@
 .adminCollectedBtn:hover:not(:disabled) { background: #dcfce7; }
 .adminCollectedBtn:disabled { opacity: 0.6; cursor: wait; }
 
+/* ── Remove-from-collection button ── */
+.removeBtn {
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.removeBtn:hover:not(:disabled) { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+.removeBtn:disabled { opacity: 0.6; cursor: wait; }
+
 /* ── Log table ── */
 .logTable {
   border: 1px solid var(--border);
